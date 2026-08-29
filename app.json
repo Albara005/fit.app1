@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Peak Fitness",
+    "slug": "peak-fitness",
+    "scheme": "peak",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B140C",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B140C"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.peakfitness.peak"
+    },
+    "android": {
+      "package": "app.peakfitness.peak",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B140C",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      ["expo-localization", { "supportsRTL": true }],
+      ["expo-secure-store", { "faceIDPermission": "نستخدم البصمة لفتح التطبيق على جهازك فقط." }],
+      ["expo-camera", { "cameraPermission": "نستخدم الكاميرا لتصوير الوجبة وتحليلها. لا نحفظ الصورة." }]
+    ],
+    "experiments": { "typedRoutes": true }
+  }
+}

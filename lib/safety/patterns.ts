@@ -1,0 +1,54 @@
+import type { InjuryId, MovementPattern } from '../types'
+
+/**
+ * Injuries exclude whole movement patterns, not individual exercises. Naming
+ * single lifts is a losing game — the model invents new names faster than the
+ * blocklist grows — so the taxonomy is fine-grained enough that removing an
+ * entire pattern still leaves a usable session.
+ */
+export const patternBlocklist: Record<InjuryId, readonly MovementPattern[]> = {
+  lower_back: [
+    'hinge_loaded',
+    'squat_loaded_spine',
+    'core_flexion',
+    'core_rotation',
+    'jump',
+    'impact',
+  ],
+  knee: ['jump', 'impact', 'lunge'],
+  shoulder: ['push_vertical', 'push_horizontal_free'],
+  neck: ['push_vertical', 'core_flexion', 'carry'],
+  wrist: ['push_horizontal_free', 'carry'],
+  elbow: ['arm_isolation', 'push_horizontal_free'],
+  ankle: ['jump', 'impact', 'lunge', 'calf'],
+  hip: ['hinge_loaded', 'lunge', 'jump', 'impact'],
+  hernia: ['core_flexion', 'jump', 'hinge_loaded', 'carry'],
+}
+
+export const INJURY_LABELS: Record<InjuryId, { ar: string; en: string }> = {
+  lower_back: { ar: 'أسفل الظهر', en: 'Lower back' },
+  knee: { ar: 'الركبة', en: 'Knee' },
+  shoulder: { ar: 'الكتف', en: 'Shoulder' },
+  neck: { ar: 'الرقبة', en: 'Neck' },
+  wrist: { ar: 'الرسغ', en: 'Wrist' },
+  elbow: { ar: 'المرفق', en: 'Elbow' },
+  ankle: { ar: 'الكاحل', en: 'Ankle' },
+  hip: { ar: 'الورك', en: 'Hip' },
+  hernia: { ar: 'فتق', en: 'Hernia' },
+}
+
+/**
+ * Maps every blocked pattern to the injury that blocks it. A map rather than a
+ * set because the user is owed the reason: "بدّلت السكوات لأن ظهرك".
+ */
+export function blockedPatterns(
+  injuries: readonly InjuryId[],
+): Map<MovementPattern, InjuryId> {
+  const out = new Map<MovementPattern, InjuryId>()
+  for (const injury of injuries) {
+    for (const pattern of patternBlocklist[injury]) {
+      if (!out.has(pattern)) out.set(pattern, injury)
+    }
+  }
+  return out
+}
