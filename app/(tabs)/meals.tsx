@@ -1,3 +1,4 @@
+import { router } from 'expo-router'
 import { useState } from 'react'
 import { Modal, StyleSheet, Text, View } from 'react-native'
 import { MealSheet } from '../../components/MealSheet'
@@ -69,7 +70,18 @@ export default function Meals() {
 
   return (
     <>
-      <Screen footer={<Button label={t('meals.addMeal')} onPress={() => setAdding(true)} />}>
+      <Screen
+        footer={
+          <>
+            <Button label={t('meals.addMeal')} onPress={() => setAdding(true)} />
+            <Button
+              label={t('meals.photo')}
+              variant="secondary"
+              onPress={() => router.push('/meal/photo')}
+            />
+          </>
+        }
+      >
         <Card>
           <Row>
             <Stat label={t('meals.todayTotal')} value={low === high ? low : `${low}–${high}`} unit={t('common.kcal')} />

@@ -68,3 +68,15 @@ describe('translate', () => {
     expect(makeT('ar')('common.save')).toBe('حفظ')
   })
 })
+
+describe('units', () => {
+  it('gives every unit a translation rather than a hard-coded abbreviation', () => {
+    // "28 يوم" shipped as the age field until a browser pass caught it: the
+    // unit was reaching for whichever key looked close enough.
+    for (const key of ['kcal', 'gram', 'kg', 'cm', 'hour', 'second', 'year', 'minute']) {
+      expect(translate('ar', `common.${key}`), key).not.toBe(`common.${key}`)
+      expect(translate('en', `common.${key}`), key).not.toBe(`common.${key}`)
+    }
+    expect(translate('ar', 'common.year')).not.toBe(translate('ar', 'common.day'))
+  })
+})

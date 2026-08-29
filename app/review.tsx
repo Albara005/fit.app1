@@ -106,7 +106,11 @@ export default function Review() {
             <Row>
               <Stat label={t('common.kcal')} value={data.nextPlan.nutrition.kcal} />
               <View style={s.grow} />
-              <Stat label={t('plan.protein')} value={data.nextPlan.nutrition.protein} unit="g" />
+              <Stat
+                  label={t('plan.protein')}
+                  value={data.nextPlan.nutrition.protein}
+                  unit={t('common.gram')}
+                />
               <View style={s.grow} />
               <Stat label={t('onboarding.daysUnit')} value={data.nextProfile.daysPerWeek} />
             </Row>

@@ -29,10 +29,16 @@ export default function Basics() {
       </Row>
 
       <SectionTitle>{t('onboarding.age')}</SectionTitle>
-      <Stepper value={age} onChange={(v) => set('age', v)} min={18} max={90} suffix={t('common.day')} />
+      <Stepper value={age} onChange={(v) => set('age', v)} min={18} max={90} suffix={t('common.year')} />
 
       <SectionTitle>{t('onboarding.height')}</SectionTitle>
-      <Stepper value={heightCm} onChange={(v) => set('heightCm', v)} min={130} max={220} suffix="cm" />
+      <Stepper
+        value={heightCm}
+        onChange={(v) => set('heightCm', v)}
+        min={130}
+        max={220}
+        suffix={t('common.cm')}
+      />
 
       <SectionTitle>{t('onboarding.weight')}</SectionTitle>
       <Stepper

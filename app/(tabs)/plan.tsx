@@ -38,11 +38,11 @@ export default function PlanTab() {
         <Row>
           <Stat label={t('common.kcal')} value={nutrition.kcal} />
           <View style={s.grow} />
-          <Stat label={t('plan.protein')} value={nutrition.protein} unit="g" />
+          <Stat label={t('plan.protein')} value={nutrition.protein} unit={t('common.gram')} />
           <View style={s.grow} />
-          <Stat label={t('plan.carbs')} value={nutrition.carbs} unit="g" />
+          <Stat label={t('plan.carbs')} value={nutrition.carbs} unit={t('common.gram')} />
           <View style={s.grow} />
-          <Stat label={t('plan.fat')} value={nutrition.fat} unit="g" />
+          <Stat label={t('plan.fat')} value={nutrition.fat} unit={t('common.gram')} />
         </Row>
       </Card>
 

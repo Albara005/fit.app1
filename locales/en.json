@@ -23,7 +23,9 @@
     "loading": "One moment…",
     "language": "Language",
     "hour": "h",
-    "second": "s"
+    "second": "s",
+    "year": "years",
+    "cm": "cm"
   },
   "onboarding": {
     "welcomeTitle": "Peak doesn't hand you a plan and walk away",
@@ -160,7 +162,11 @@
     "remaining": "Remaining",
     "over": "Over",
     "fatNote": "The fat range is wider because oil doesn't show in a photo.",
-    "empty": "Nothing logged today"
+    "empty": "Nothing logged today",
+    "photoNeedsServer": "Photo analysis needs the server — the model key never ships in the app. Until then, type the meal and answer the two questions.",
+    "photoPermission": "We need camera access to photograph the meal. The image is analysed and deleted immediately, never stored.",
+    "photoAllow": "Allow camera",
+    "photoNotStored": "The photo is not stored. Analysed, then deleted."
   },
   "plan": {
     "title": "Plan",

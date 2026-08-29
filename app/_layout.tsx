@@ -76,6 +76,7 @@ export default function RootLayout() {
           />
           <Stack.Screen name="review" options={{ presentation: 'modal', title: t('review.title') }} />
           <Stack.Screen name="privacy" options={{ title: t('privacy.title') }} />
+          <Stack.Screen name="meal/photo" options={{ presentation: 'modal', title: t('meals.photo') }} />
         </Stack>
       </SafeAreaProvider>
     </QueryClientProvider>

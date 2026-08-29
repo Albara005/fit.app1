@@ -36,7 +36,7 @@ export default function ProfileTab() {
           <Row>
             <Stat label={t('onboarding.weight')} value={profile.weightKg} unit={t('common.kg')} />
             <View style={s.grow} />
-            <Stat label={t('onboarding.height')} value={profile.heightCm} unit="cm" />
+            <Stat label={t('onboarding.height')} value={profile.heightCm} unit={t('common.cm')} />
             <View style={s.grow} />
             <Stat label={t('onboarding.age')} value={profile.age} />
           </Row>

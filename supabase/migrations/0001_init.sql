@@ -280,4 +280,9 @@ begin
   return used <= p_limit;
 end $$;
 
+-- Revoking from PUBLIC also removes the grant service_role inherits through it,
+-- so the edge functions have to be granted back explicitly. Without this the
+-- quota check fails closed on the first deploy — which is the safe direction,
+-- but it means no plan ever reaches the model.
 revoke all on function public.consume_quota(uuid, text, integer) from public;
+grant execute on function public.consume_quota(uuid, text, integer) to service_role;
