@@ -74,11 +74,20 @@ export default function Meals() {
         footer={
           <>
             <Button label={t('meals.addMeal')} onPress={() => setAdding(true)} />
-            <Button
-              label={t('meals.photo')}
-              variant="secondary"
-              onPress={() => router.push('/meal/photo')}
-            />
+            <Row>
+              <Button
+                label={t('meals.barcode')}
+                variant="secondary"
+                style={s.grow}
+                onPress={() => router.push('/meal/label')}
+              />
+              <Button
+                label={t('meals.photo')}
+                variant="secondary"
+                style={s.grow}
+                onPress={() => router.push('/meal/photo')}
+              />
+            </Row>
           </>
         }
       >

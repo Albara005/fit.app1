@@ -166,7 +166,22 @@
     "photoNeedsServer": "Photo analysis needs the server — the model key never ships in the app. Until then, type the meal and answer the two questions.",
     "photoPermission": "We need camera access to photograph the meal. The image is analysed and deleted immediately, never stored.",
     "photoAllow": "Allow camera",
-    "photoNotStored": "The photo is not stored. Analysed, then deleted."
+    "photoNotStored": "The photo is not stored. Analysed, then deleted.",
+    "labelTitle": "Read the label",
+    "labelIntro": "Type the values from the pack per 100 g, and how much you ate. This is the most accurate path in the app and it uses no AI at all.",
+    "per100g": "Per 100 g",
+    "kcalField": "Calories",
+    "proteinField": "Protein",
+    "carbsField": "Carbs",
+    "fatField": "Fat",
+    "gramsField": "How much you ate (g)",
+    "productName": "Product name",
+    "scan": "Scan the barcode",
+    "scanning": "Point the camera at the barcode",
+    "scanFailed": "We couldn't find that product. Type the values from the label.",
+    "scanInvalid": "That barcode didn't read cleanly. Try again.",
+    "inconsistent": "Those numbers don't add up to the stated calories. Check them — we'll save exactly what you typed.",
+    "fillFields": "Fill in the missing fields."
   },
   "plan": {
     "title": "Plan",

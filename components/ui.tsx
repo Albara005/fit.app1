@@ -163,12 +163,14 @@ export function Chip({
 const noOutline = { outlineStyle: 'none' } as unknown as ViewStyle
 
 export function Input({
-  value, onChangeText, placeholder, inputMode, style,
+  value, onChangeText, placeholder, inputMode, invalid, style,
 }: {
   value: string
   onChangeText: (text: string) => void
   placeholder?: string
   inputMode?: 'text' | 'numeric' | 'decimal'
+  /** Marked only after a failed submit; nagging while typing is not help. */
+  invalid?: boolean
   style?: StyleProp<ViewStyle>
 }) {
   const [focused, setFocused] = useState(false)
@@ -181,7 +183,8 @@ export function Input({
       placeholder={placeholder}
       placeholderTextColor={colors.textFaint}
       inputMode={inputMode}
-      style={[s.input, noOutline, focused && s.inputFocused, style]}
+      accessibilityState={{ disabled: false }}
+      style={[s.input, noOutline, focused && s.inputFocused, invalid && s.inputInvalid, style]}
     />
   )
 }
@@ -436,4 +439,5 @@ const s = StyleSheet.create({
     ...type.body,
   },
   inputFocused: { borderColor: colors.lime },
+  inputInvalid: { borderColor: colors.danger },
 })

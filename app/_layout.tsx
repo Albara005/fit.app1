@@ -90,6 +90,10 @@ export default function RootLayout() {
               name="meal/photo"
               options={{ presentation: 'modal', title: t('meals.photo') }}
             />
+            <Stack.Screen
+              name="meal/label"
+              options={{ presentation: 'modal', title: t('meals.labelTitle') }}
+            />
           </Stack>
         </LockGate>
       </SafeAreaProvider>
