@@ -5,6 +5,7 @@ import {
   Body, Card, Divider, Row, Screen, SectionTitle, Small, Spacer, Stat, Title,
 } from '../../components/ui'
 import { authenticate, lockAvailable } from '../../lib/auth/deviceLock'
+import { signOut, useSession } from '../../lib/auth/session'
 import { useProfile, useSessionsThisWeek } from '../../lib/data/queries'
 import { useT } from '../../lib/i18n/useT'
 import { useSettings } from '../../lib/store/settings'
@@ -24,6 +25,7 @@ export default function ProfileTab() {
   const { t, locale } = useT()
   const { data: profile } = useProfile()
   const { data: sessions } = useSessionsThisWeek()
+  const { data: session } = useSession()
   const { lockEnabled, setLockEnabled, setUnlocked, setLocale } = useSettings()
   const [canLock, setCanLock] = useState(false)
 
@@ -87,6 +89,18 @@ export default function ProfileTab() {
         <LinkRow label={t('profile.edit')} onPress={() => router.push('/(onboarding)/basics')} />
         <Divider />
         <LinkRow label={t('profile.privacy')} onPress={() => router.push('/privacy')} />
+        {session?.userId ? (
+          <>
+            <Divider />
+            <LinkRow
+              label={t('profile.signOut')}
+              onPress={async () => {
+                await signOut()
+                router.replace('/')
+              }}
+            />
+          </>
+        ) : null}
         {/* Hidden where the platform cannot honour it. A switch that stores a
             boolean and locks nothing is worse than no switch. */}
         {canLock ? (

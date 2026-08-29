@@ -48,7 +48,7 @@ export default function Welcome() {
         {[
           { k: 'today.checkInTitle', v: '10s' },
           { k: 'review.title', v: '2m' },
-          { k: 'plan.title', v: '6–8w' },
+          { k: 'phase.title', v: '6–8w' },
         ].map((loop) => (
           <View key={loop.k} style={s.loop}>
             <Text style={s.loopValue}>{loop.v}</Text>

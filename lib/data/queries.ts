@@ -20,8 +20,14 @@ export const keys = {
   corrections: ['corrections'] as const,
 }
 
-export function useProfile(): UseQueryResult<Profile | null> {
-  return useQuery({ queryKey: keys.profile, queryFn: () => repo().getProfile() })
+export function useProfile(options: { enabled?: boolean } = {}): UseQueryResult<Profile | null> {
+  return useQuery({
+    queryKey: keys.profile,
+    queryFn: () => repo().getProfile(),
+    // The entry gate switches this off while signed out: a profile read that
+    // RLS will refuse anyway costs a retry cycle the user waits through.
+    enabled: options.enabled ?? true,
+  })
 }
 
 export function useDerivedProfile(): DerivedProfile | null {

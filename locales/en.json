@@ -288,5 +288,21 @@
     "continue": "Keep the same goal",
     "changeGoal": "Change the goal to {{goal}}",
     "startPhase": "Start a new phase"
+  },
+  "auth": {
+    "title": "Sign in",
+    "intro": "We send a six-digit code to your email. No password to remember or lose.",
+    "email": "Your email",
+    "sendCode": "Send the code",
+    "codeSent": "Code sent to {{email}}",
+    "code": "Code",
+    "verify": "Sign in",
+    "changeEmail": "Change email",
+    "invalidEmail": "That does not look like an email address.",
+    "invalidCode": "The code is six digits.",
+    "failed": "That didn't work. Check the code or request a new one.",
+    "resend": "Send a new code",
+    "signOutConfirm": "Sign out? Your data stays in your account.",
+    "sendFailed": "We couldn't send the code. Check your connection and try again."
   }
 }

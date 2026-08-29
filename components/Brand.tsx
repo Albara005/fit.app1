@@ -3,18 +3,19 @@ import Svg, { Path } from 'react-native-svg'
 import { colors, space, type } from '../lib/theme'
 
 /**
- * The mark, reduced to what survives at 28px: the lime arc of the "D" and a
- * peak rising out of it. The full illustration belongs on the store listing,
- * not in a navigation bar.
+ * The mark, reduced to what survives at 24px: a complete lime "D" with the peak
+ * leaning against it. An earlier version ran the peak through the D's stem,
+ * which cost the stem and left the glyph reading as "7D" at tab-bar size. The
+ * full illustration belongs on the store listing, not in a navigation bar.
  */
 export function PeakMark({ size = 40 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 48 48" accessibilityLabel="Peak">
       <Path
-        d="M10 6h16c9.4 0 16 7.6 16 18s-6.6 18-16 18h-4v-9h3.4c4.6 0 7.6-3.8 7.6-9s-3-9-7.6-9H10z"
+        d="M14 5h11c11 0 18 7.6 18 19s-7 19-18 19h-11V33h10c5.2 0 8.6-3.7 8.6-9S29.2 15 24 15H14z"
         fill={colors.lime}
       />
-      <Path d="M6 42 20 12l6 13-4 2-2-4.4L14 42z" fill={colors.sand} />
+      <Path d="M4 43 15 17l6.6 15.6-5.4 2.3L15 30l-5 13z" fill={colors.sand} />
     </Svg>
   )
 }
