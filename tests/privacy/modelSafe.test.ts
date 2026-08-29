@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MODEL_SAFE_KEYS, toModelSafe } from '../../lib/privacy/modelSafe'
+import { translate } from '../../lib/i18n'
 
 describe('what the model is allowed to see', () => {
   it('drops every identifying field, however the row arrived', () => {
@@ -34,5 +35,18 @@ describe('what the model is allowed to see', () => {
     const safe = toModelSafe({ age: 30 }) as Record<string, unknown>
     expect(safe.weightKg).toBeUndefined()
     expect(safe.age).toBe(30)
+  })
+})
+
+describe('the privacy screen and the allowlist cannot drift apart', () => {
+  it('names every sent field in both languages', () => {
+    // The screen renders this list from MODEL_SAFE_KEYS, so a key without a
+    // label would show a raw identifier to a reader who came here for clarity.
+    for (const key of MODEL_SAFE_KEYS) {
+      for (const locale of ['ar', 'en'] as const) {
+        const label = translate(locale, `privacy.field.${key}`)
+        expect(label, `${locale}/${key}`).not.toBe(`privacy.field.${key}`)
+      }
+    }
   })
 })

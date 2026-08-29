@@ -99,3 +99,15 @@ describe('dish memory', () => {
     expect(memoryLine('kabsa', memory, 'en')).toContain('550')
   })
 })
+
+describe('formatRange', () => {
+  it('collapses a range whose ends meet', () => {
+    // A chicken breast really has 0 g of carbohydrate; "0–0 g" reads as a bug.
+    expect(formatRange({ min: 0, max: 0 }, 'g')).toBe('0 g')
+    expect(formatRange({ min: 42, max: 42 })).toBe('42')
+  })
+
+  it('keeps a real range as a range', () => {
+    expect(formatRange({ min: 229, max: 274 }, 'سعرة')).toBe('229–274 سعرة')
+  })
+})

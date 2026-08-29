@@ -8,3 +8,4 @@ web-build/
 .env.local
 expo-env.d.ts
 coverage/
+dist/

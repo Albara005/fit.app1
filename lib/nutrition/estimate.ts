@@ -93,7 +93,12 @@ export function midpoint(r: MacroRange): number {
   return Math.round((r.min + r.max) / 2)
 }
 
-/** "420–560 سعرة" — Western digits in both locales, per the product's numbers rule. */
+/**
+ * "420–560 سعرة" — Western digits in both locales, per the product's numbers
+ * rule. A range whose ends meet is printed as one number: "0–0 g" of carbs in a
+ * chicken breast is technically a range and reads like a rendering bug.
+ */
 export function formatRange(r: MacroRange, unit = ''): string {
-  return `${r.min}–${r.max}${unit ? ` ${unit}` : ''}`
+  const value = r.min === r.max ? `${r.min}` : `${r.min}–${r.max}`
+  return unit ? `${value} ${unit}` : value
 }

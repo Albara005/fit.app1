@@ -28,11 +28,11 @@ describe('locale bundles', () => {
     }
   })
 
-  it('use Western digits everywhere except the deliberate 18+ copy', () => {
+  it('use Western digits everywhere, with no exceptions', () => {
+    // Eastern Arabic numerals are correct Arabic and wrong for this product:
+    // Gulf digital products use 0-9, so a screen that mixes them looks foreign.
     const eastern = /[٠-٩]/
-    const allowed = ['onboarding.blockedTitle', 'onboarding.blockedBody', 'onboarding.goalBody']
     for (const key of flatten(ar as Node)) {
-      if (allowed.includes(key)) continue
       expect(eastern.test(translate('ar', key)), key).toBe(false)
     }
   })

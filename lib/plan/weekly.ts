@@ -153,7 +153,9 @@ function buildCards(
 
   const changedBody = codes.includes('LOW_ADHERENCE')
     ? {
-        ar: `نزّلت الأسبوع إلى ${profile.daysPerWeek} أيام. أربعة أيام تكملها أفضل من ستة تفوّت نصّها.`,
+        // Kept free of its own numbers: the sentence before it already names
+        // the real one, and an invented "four beats six" contradicts it.
+        ar: `نزّلت الأسبوع إلى ${profile.daysPerWeek} أيام. يوم تكمله أفضل من يومين تفوّتهما.`,
         en: `I cut the week to ${profile.daysPerWeek} days. Days you finish beat days you skip.`,
       }
     : codes.includes('STALLED')
