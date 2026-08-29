@@ -52,3 +52,16 @@ export const RTL_LOCALES: readonly Locale[] = ['ar']
 export function isRtl(locale: Locale): boolean {
   return RTL_LOCALES.includes(locale)
 }
+
+/**
+ * Wraps a run in a left-to-right isolate so bidi cannot reorder it.
+ *
+ * A leading "-" is a bidi-weak character: inside an Arabic paragraph "-3.85"
+ * renders as "3.85-", which reads as a trailing dash rather than a negative
+ * number. Signed numbers, ratios and ranges all need this; unsigned digits are
+ * fine without it, but isolating them costs nothing and removes the judgement
+ * call about which ones need it.
+ */
+export function ltr(text: string | number): string {
+  return `\u2066${text}\u2069`
+}

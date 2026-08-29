@@ -1,8 +1,10 @@
 import { router } from 'expo-router'
+import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import {
   Body, Card, Divider, Row, Screen, SectionTitle, Small, Spacer, Stat, Title,
 } from '../../components/ui'
+import { authenticate, lockAvailable } from '../../lib/auth/deviceLock'
 import { useProfile, useSessionsThisWeek } from '../../lib/data/queries'
 import { useT } from '../../lib/i18n/useT'
 import { useSettings } from '../../lib/store/settings'
@@ -22,7 +24,27 @@ export default function ProfileTab() {
   const { t, locale } = useT()
   const { data: profile } = useProfile()
   const { data: sessions } = useSessionsThisWeek()
-  const { lockEnabled, setLockEnabled, setLocale } = useSettings()
+  const { lockEnabled, setLockEnabled, setUnlocked, setLocale } = useSettings()
+  const [canLock, setCanLock] = useState(false)
+
+  useEffect(() => {
+    void lockAvailable().then(setCanLock)
+  }, [])
+
+  // Turning the lock on proves it can be turned off again first. Enabling it
+  // without a successful authentication is how someone locks themselves out of
+  // their own data on the next launch.
+  async function toggleLock() {
+    if (lockEnabled) {
+      if (!(await authenticate(t('lock.prompt')))) return
+      setLockEnabled(false)
+      setUnlocked(true)
+      return
+    }
+    if (!(await authenticate(t('lock.prompt')))) return
+    setLockEnabled(true)
+    setUnlocked(true)
+  }
 
   return (
     <Screen>
@@ -65,24 +87,30 @@ export default function ProfileTab() {
         <LinkRow label={t('profile.edit')} onPress={() => router.push('/(onboarding)/basics')} />
         <Divider />
         <LinkRow label={t('profile.privacy')} onPress={() => router.push('/privacy')} />
-        <Divider />
-        <Pressable
-          accessibilityRole="switch"
-          accessibilityState={{ checked: lockEnabled }}
-          onPress={() => setLockEnabled(!lockEnabled)}
-          style={s.link}
-        >
-          <View style={s.grow}>
-            <Text style={s.linkText}>{t('profile.lock')}</Text>
-            {/* Says what it does and no more: a device lock is not encryption
-                of the data on the server, and claiming otherwise would be a lie
-                a user might rely on. */}
-            <Small>{t('profile.lockBody')}</Small>
-          </View>
-          <View style={[s.toggle, lockEnabled && s.toggleOn]}>
-            <View style={[s.knob, lockEnabled && s.knobOn]} />
-          </View>
-        </Pressable>
+        {/* Hidden where the platform cannot honour it. A switch that stores a
+            boolean and locks nothing is worse than no switch. */}
+        {canLock ? (
+          <>
+            <Divider />
+            <Pressable
+              accessibilityRole="switch"
+              accessibilityState={{ checked: lockEnabled }}
+              onPress={toggleLock}
+              style={s.link}
+            >
+              <View style={s.grow}>
+                <Text style={s.linkText}>{t('profile.lock')}</Text>
+                {/* Says what it does and no more: a device lock is not
+                    encryption of the rows on the server, and claiming
+                    otherwise would be a lie a user might rely on. */}
+                <Small>{t('profile.lockBody')}</Small>
+              </View>
+              <View style={[s.toggle, lockEnabled && s.toggleOn]}>
+                <View style={[s.knob, lockEnabled && s.knobOn]} />
+              </View>
+            </Pressable>
+          </>
+        ) : null}
       </Card>
       <Spacer size={space.md} />
     </Screen>

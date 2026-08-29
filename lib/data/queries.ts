@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tan
 import { adapt, type Adaptation } from '../plan/adapt'
 import { producePlan, type PlanOutcome } from '../plan/generate'
 import { deriveProfile } from '../plan/nutrition'
+import { reviewPhase, type PhaseReview } from '../plan/phase'
 import { reviewWeek, type WeeklyReview } from '../plan/weekly'
 import type { CheckIn, DerivedProfile, MealLogEntry, Plan, Profile, WorkoutDay } from '../types'
 import { repo, today, type ConsentKind, type WeightEntry } from './index'
@@ -177,6 +178,41 @@ export function useWeeklyReview(profile: DerivedProfile | null): UseQueryResult<
         sessionsCompleted: sessions.length,
         checkIns: await repo().listCheckIns(7),
         weightsKg: weights.map((w) => w.weightKg),
+      })
+    },
+  })
+}
+
+/**
+ * Loop three. Sessions are bucketed into weeks by how long ago they were
+ * logged, so a phase can be reviewed from the same logs the other two loops
+ * already write — there is no separate phase record to fall out of sync.
+ */
+export function usePhaseReview(profile: DerivedProfile | null): UseQueryResult<PhaseReview | null> {
+  return useQuery({
+    queryKey: ['phaseReview', profile?.goal, profile?.weightKg],
+    enabled: profile !== null,
+    queryFn: async () => {
+      if (!profile) return null
+      const plan = await repo().latestPlan()
+      const weeks = Math.max(1, (plan?.weekIndex ?? 0) + 1)
+      const since = new Date()
+      since.setDate(since.getDate() - weeks * 7)
+
+      const sessions = await repo().listSessions(since.toISOString())
+      const perWeek = Array.from({ length: weeks }, () => 0)
+      for (const session of sessions) {
+        const ageDays = (Date.now() - Date.parse(session.completedAt)) / 86_400_000
+        const bucket = weeks - 1 - Math.floor(ageDays / 7)
+        if (bucket >= 0 && bucket < weeks) perWeek[bucket] = (perWeek[bucket] ?? 0) + 1
+      }
+
+      return reviewPhase({
+        profile,
+        sessionsPerWeek: perWeek,
+        plannedPerWeek: plan?.days.length ?? profile.daysPerWeek,
+        weightsKg: (await repo().listWeights(60)).map((w) => w.weightKg),
+        checkIns: await repo().listCheckIns(60),
       })
     },
   })

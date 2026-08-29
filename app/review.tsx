@@ -8,6 +8,7 @@ import {
   useAddWeight, useDerivedProfile, useGeneratePlan, useSaveProfile, useWeeklyReview,
 } from '../lib/data/queries'
 import { today } from '../lib/data/repo'
+import { ltr } from '../lib/i18n'
 import { useT } from '../lib/i18n/useT'
 import { colors, space, type } from '../lib/theme'
 
@@ -85,7 +86,9 @@ export default function Review() {
               {data.weeklyChangeKg !== null ? (
                 <Stat
                   label={t('common.week')}
-                  value={`${data.weeklyChangeKg > 0 ? '+' : ''}${Math.round(data.weeklyChangeKg * 100) / 100}`}
+                  value={ltr(
+                    `${data.weeklyChangeKg > 0 ? '+' : ''}${Math.round(data.weeklyChangeKg * 100) / 100}`,
+                  )}
                   unit={t('common.kg')}
                 />
               ) : null}

@@ -266,5 +266,27 @@
     "shellfish": "Shellfish",
     "fish": "Fish",
     "soy": "Soy"
+  },
+  "lock": {
+    "title": "Peak is locked",
+    "body": "Unlock with your fingerprint or device passcode.",
+    "unlock": "Unlock",
+    "prompt": "Unlock Peak Fitness",
+    "unavailable": "This device has no fingerprint or passcode enrolled, so the lock is unavailable."
+  },
+  "phase": {
+    "title": "Phase review",
+    "intro": "Every 6–8 weeks we stop and ask one question: same goal, or a different one?",
+    "open": "Open the phase review",
+    "notYet": "The phase review opens after 6 weeks",
+    "weeksIn": "{{weeks}} of 6 weeks in",
+    "report": "Report",
+    "share": "Share the report",
+    "shared": "Shared",
+    "copied": "Report copied",
+    "copyManually": "Copy the text manually:",
+    "continue": "Keep the same goal",
+    "changeGoal": "Change the goal to {{goal}}",
+    "startPhase": "Start a new phase"
   }
 }

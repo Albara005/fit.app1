@@ -4,6 +4,7 @@ import {
   Body, Button, Card, CoachNote, Divider, Row, Screen, SectionTitle, Small, Spacer, Stat, Title,
 } from '../../components/ui'
 import { usePlan } from '../../lib/data/queries'
+import { MIN_PHASE_WEEKS } from '../../lib/plan/phase'
 import { useT } from '../../lib/i18n/useT'
 import { colors, radius, space, type } from '../../lib/theme'
 
@@ -22,7 +23,20 @@ export default function PlanTab() {
   const { nutrition } = plan
 
   return (
-    <Screen footer={<Button label={t('review.start')} onPress={() => router.push('/review')} />}>
+    <Screen
+      footer={
+        <>
+          <Button label={t('review.start')} onPress={() => router.push('/review')} />
+          {/* Shown from the sixth week, which is when it has something to say.
+              The screen still refuses to decide early if it is opened sooner. */}
+          {plan.weekIndex + 1 >= MIN_PHASE_WEEKS ? (
+            <Button label={t('phase.open')} variant="secondary" onPress={() => router.push('/phase')} />
+          ) : (
+            <Small style={s.hint}>{t('phase.weeksIn', { weeks: plan.weekIndex + 1 })}</Small>
+          )}
+        </>
+      }
+    >
       <Row>
         <Title style={s.grow}>{t('plan.week', { index: plan.weekIndex + 1 })}</Title>
         <View style={s.source}>
@@ -98,6 +112,7 @@ const s = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
   },
   sourceText: { color: colors.sand },
+  hint: { alignSelf: 'center' },
   dayTitle: { ...type.heading, color: colors.text },
   exercise: { paddingVertical: 3 },
 })

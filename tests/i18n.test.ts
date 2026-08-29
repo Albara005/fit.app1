@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import ar from '../locales/ar.json'
 import en from '../locales/en.json'
-import { isRtl, makeT, translate } from '../lib/i18n'
+import { isRtl, ltr, makeT, translate } from '../lib/i18n'
 
 type Node = Record<string, unknown>
 const flatten = (node: Node, prefix = ''): string[] =>
@@ -78,5 +78,17 @@ describe('units', () => {
       expect(translate('en', `common.${key}`), key).not.toBe(`common.${key}`)
     }
     expect(translate('ar', 'common.year')).not.toBe(translate('ar', 'common.day'))
+  })
+})
+
+describe('bidi isolation', () => {
+  it('wraps a run so a leading sign cannot be reordered', () => {
+    // Without this, "-3.85" inside an Arabic paragraph renders as "3.85-".
+    expect(ltr('-3.85')).toBe('⁦-3.85⁩')
+    expect(ltr(7)).toBe('⁦7⁩')
+  })
+
+  it('leaves the visible characters untouched', () => {
+    expect(ltr('-3.85').replace(/[⁦⁩]/g, '')).toBe('-3.85')
   })
 })
