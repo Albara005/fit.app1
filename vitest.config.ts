@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 
 export default defineConfig({
   resolve: { alias: { '@': resolve(__dirname, '.') } },
+  define: { __DEV__: 'false' },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
