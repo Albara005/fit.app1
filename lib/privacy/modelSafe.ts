@@ -1,0 +1,35 @@
+import type { Locale, Profile } from '../types'
+
+/**
+ * The complete set of fields a model is ever allowed to receive. No name, no
+ * email, no phone number, no user id, no device id.
+ *
+ * The list is here rather than at the call site on purpose: a payload is built
+ * by copying these keys out, so adding a field to the profile cannot leak it by
+ * default. Someone has to come here and add it deliberately — and this file has
+ * a test that will make them explain why.
+ */
+export const MODEL_SAFE_KEYS = [
+  'age',
+  'sex',
+  'heightCm',
+  'weightKg',
+  'goal',
+  'activity',
+  'daysPerWeek',
+  'equipment',
+  'injuries',
+  'allergies',
+  'dietary',
+  'locale',
+] as const
+
+export type ModelSafeKey = (typeof MODEL_SAFE_KEYS)[number]
+export type ModelSafeProfile = Pick<Profile, ModelSafeKey> & { locale: Locale }
+
+/** Copy-out, never delete-from: unknown fields are dropped, not overlooked. */
+export function toModelSafe(row: Record<string, unknown>): ModelSafeProfile {
+  const out: Record<string, unknown> = {}
+  for (const key of MODEL_SAFE_KEYS) out[key] = row[key]
+  return out as ModelSafeProfile
+}
