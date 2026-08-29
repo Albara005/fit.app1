@@ -1,4 +1,4 @@
-import { findTerm, freeOfSegments, matchesTerm } from './text'
+import { findTerm, freeOfSegments, maskTerms, matchesTerm, normalize } from './text'
 
 export type AllergenId =
   | 'sesame'
@@ -241,6 +241,12 @@ export const ALLERGENS: readonly AllergenGroup[] = [
       'دقيق حمص',
       'صويا صوص خالي من الجلوتين',
       'tamari',
+      // Tahini is sesame paste, not flour. Masked here because Arabic suffix
+      // rules otherwise let "طحين" reach "طحينة".
+      'طحينه',
+      'طحينيه',
+      'tahini',
+      'tahina',
     ],
   },
   {
@@ -483,13 +489,17 @@ export function allergenLabel(id: AllergenId): { ar: string; en: string } {
   return BY_ID.get(id)?.label ?? { ar: id, en: id }
 }
 
-function clearedByException(text: string, group: AllergenGroup): boolean {
-  if (findTerm(text, group.exceptions) !== null) return true
-  // "خالي من الجلوتين" / "dairy-free" clears the group it names.
-  const segments = freeOfSegments(text)
-  if (segments.length === 0) return false
+/**
+ * Returns the text this group should be searched in, or null when a "free from"
+ * claim clears the group outright. Exceptions mask their own span; a free-of
+ * claim is a statement about the whole item, so it clears everything.
+ */
+function searchableFor(text: string, group: AllergenGroup): string | null {
   const named = [...group.direct, ...group.derivative]
-  return segments.some((seg) => named.some((term) => matchesTerm(seg, term)))
+  for (const segment of freeOfSegments(text)) {
+    if (named.some((term) => matchesTerm(segment, term))) return null
+  }
+  return group.exceptions.length > 0 ? maskTerms(text, group.exceptions) : normalize(text)
 }
 
 /**
@@ -504,19 +514,20 @@ export function matchIngredient(
   for (const id of allergies) {
     const group = BY_ID.get(id)
     if (!group) continue
-    if (clearedByException(ingredient, group)) continue
+    const text = searchableFor(ingredient, group)
+    if (text === null) continue
 
-    const direct = findTerm(ingredient, group.direct)
+    const direct = findTerm(text, group.direct)
     if (direct !== null) {
       out.push({ allergen: id, term: direct, kind: 'direct' })
       continue
     }
-    const derived = findTerm(ingredient, group.derivative)
+    const derived = findTerm(text, group.derivative)
     if (derived !== null) {
       out.push({ allergen: id, term: derived, kind: 'derivative' })
       continue
     }
-    const cross = findTerm(ingredient, group.crossContact)
+    const cross = findTerm(text, group.crossContact)
     if (cross !== null) {
       out.push({ allergen: id, term: cross, kind: 'cross-contact' })
     }

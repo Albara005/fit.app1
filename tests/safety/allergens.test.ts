@@ -77,6 +77,22 @@ describe('false positives that would wreck the plan', () => {
     expect(allergenMap.matches('فول مدمس', ['peanut'])).toBe(false)
   })
 
+  it('does not read flour in tahini — طحين is not طحينة', () => {
+    expect(allergenMap.matches('طحينة', ['gluten'])).toBe(false)
+    expect(allergenMap.matches('سلطة بالطحينة', ['gluten'])).toBe(false)
+    expect(allergenMap.matches('طحينة', ['sesame'])).toBe(true)
+    expect(allergenMap.matches('دقيق قمح', ['gluten'])).toBe(true)
+  })
+
+  it('an exception masks its own span, it does not clear the group', () => {
+    // Both are present; excusing one must not excuse the other.
+    expect(hits('طحينة وخبز', ['gluten', 'sesame']).sort()).toEqual(
+      ['gluten:derivative', 'sesame:derivative'].sort(),
+    )
+    expect(allergenMap.matches('جوز الهند واللوز', ['treenut'])).toBe(true)
+    expect(allergenMap.matches('حليب لوز وزبادي', ['dairy'])).toBe(true)
+  })
+
   it('honours "خالي من" and "-free" claims', () => {
     expect(allergenMap.matches('خبز خالي من الجلوتين', ['gluten'])).toBe(false)
     expect(allergenMap.matches('dairy-free yoghurt', ['dairy'])).toBe(false)

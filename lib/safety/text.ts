@@ -51,33 +51,49 @@ const cache = new Map<string, RegExp>()
 /**
  * Builds a boundary-anchored matcher for one term. Arabic terms allow clitic
  * prefixes and inflectional suffixes; Latin terms use word boundaries with an
- * optional plural.
+ * optional plural. Boundaries are lookarounds, not consumed characters, so the
+ * same pattern can be used to blank out a span without eating its neighbour.
  */
-export function termPattern(term: string): RegExp {
-  const key = term
+export function termPattern(term: string, global = false): RegExp {
+  const key = `${global ? 'g:' : ''}${term}`
   const cached = cache.get(key)
   if (cached) return cached
 
   const t = normalize(term)
   const body = escapeRe(t).replace(/\\?\s+/g, '\\s+')
+  const flags = global ? 'g' : ''
   const re = hasArabic(t)
-    ? new RegExp(`(?:^|[^${AR_LETTER}])${AR_PREFIX}${body}${AR_SUFFIX}(?![${AR_LETTER}])`)
-    : new RegExp(`(?:^|[^a-z0-9])${body}(?:e?s)?(?![a-z0-9])`)
+    ? new RegExp(`(?<![${AR_LETTER}])${AR_PREFIX}${body}${AR_SUFFIX}(?![${AR_LETTER}])`, flags)
+    : new RegExp(`(?<![a-z0-9])${body}(?:e?s)?(?![a-z0-9])`, flags)
 
   cache.set(key, re)
   return re
 }
 
 export function matchesTerm(text: string, term: string): boolean {
-  return termPattern(term).test(` ${normalize(text)} `)
+  return termPattern(term).test(normalize(text))
 }
 
 export function findTerm(text: string, terms: readonly string[]): string | null {
-  const haystack = ` ${normalize(text)} `
+  const haystack = normalize(text)
   for (const term of terms) {
     if (termPattern(term).test(haystack)) return term
   }
   return null
+}
+
+/**
+ * Blanks out the spans matched by `terms`, leaving the rest of the string
+ * searchable. Exceptions have to mask rather than clear the whole item:
+ * "جوز الهند واللوز" excludes coconut from the tree-nut check and still has to
+ * flag the almond sitting next to it.
+ */
+export function maskTerms(text: string, terms: readonly string[]): string {
+  let out = normalize(text)
+  for (const term of terms) {
+    out = out.replace(termPattern(term, true), ' ')
+  }
+  return out
 }
 
 /**
