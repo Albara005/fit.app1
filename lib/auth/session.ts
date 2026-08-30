@@ -41,8 +41,10 @@ export function useSession(): UseQueryResult<SessionState> {
 export async function requestCode(email: string): Promise<void> {
   const { error } = await supabase().auth.signInWithOtp({
     email,
-    // No implicit account creation from a typo: a stray address should bounce,
-    // not quietly become an empty account with health data attached.
+    // A first sign-in creates the account, which is the only way anyone gets
+    // one — there is no separate sign-up. A mistyped address therefore creates
+    // an empty account and no code ever arrives at it, which is the failure
+    // mode to watch if abuse becomes a problem.
     options: { shouldCreateUser: true },
   })
   if (error) throw error

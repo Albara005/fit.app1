@@ -252,7 +252,9 @@
       "allergies": "Allergies",
       "dietary": "Dietary limits",
       "locale": "Plan language"
-    }
+    },
+    "barcodeTitle": "Product database",
+    "barcodeBody": "Scanning a barcode sends the barcode number, and only that, to a public product database. Nothing about you goes with it — not your account, your weight or your log. You can skip it entirely and type the values from the label."
   },
   "safety": {
     "allergenBlocked": "We removed a meal from your plan because it contained {{allergen}}.",

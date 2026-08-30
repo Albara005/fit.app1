@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { router } from 'expo-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Body, Button, Card, Input, Row, Screen, SectionTitle, Small, Spacer, Title } from '../../components/ui'
 import { useAddMeal } from '../../lib/data/queries'
@@ -29,6 +29,10 @@ export default function Label() {
   const [scanning, setScanning] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [permission, requestPermission] = useCameraPermissions()
+  // The camera fires this callback once per frame while a barcode is in view.
+  // A ref rather than state: a state update lands too late to stop the frames
+  // already queued, and each one would be its own network lookup.
+  const handled = useRef(false)
   const addMeal = useAddMeal()
 
   const validation = validateLabel(draft)
@@ -36,6 +40,8 @@ export default function Label() {
   const invalid = (field: Field) => showErrors && validation.invalid.includes(field)
 
   async function onScan(code: string) {
+    if (handled.current) return
+    handled.current = true
     setScanning(false)
     const product = await lookupBarcode(code)
     if (!product) {
@@ -104,6 +110,7 @@ export default function Label() {
             onPress={async () => {
               if (!permission?.granted && !(await requestPermission()).granted) return
               setNotice(null)
+              handled.current = false
               setScanning(true)
             }}
           />

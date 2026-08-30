@@ -63,6 +63,11 @@ export default function Privacy() {
       <Card>
         <Section title={t('privacy.photosTitle')} body={t('privacy.photosBody')} />
         <Divider />
+        {/* A barcode lookup leaves the device too. Smaller than the model call,
+            and still something a page that claims to list everything has to
+            list. */}
+        <Section title={t('privacy.barcodeTitle')} body={t('privacy.barcodeBody')} />
+        <Divider />
         <Section title={t('privacy.logsTitle')} body={t('privacy.logsBody')} />
       </Card>
 
