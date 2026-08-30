@@ -12,7 +12,8 @@
     "test": "node scripts/sync-edge-safety.mjs && vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "sync:edge": "node scripts/sync-edge-safety.mjs"
+    "sync:edge": "node scripts/sync-edge-safety.mjs",
+    "pack:single": "npm run build:web && node scripts/pack-single-file.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.14",

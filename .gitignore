@@ -1,3 +1,4 @@
+dist-single/
 node_modules/
 .expo/
 dist/
@@ -8,4 +9,3 @@ web-build/
 .env.local
 expo-env.d.ts
 coverage/
-dist/
