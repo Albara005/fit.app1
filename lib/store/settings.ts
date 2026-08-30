@@ -7,9 +7,12 @@ interface SettingsState {
   locale: Locale
   lockEnabled: boolean
   unlocked: boolean
+  /** Highest plan week the user has actually opened. -1 means none yet. */
+  lastSeenPlanWeek: number
   setLocale: (locale: Locale) => void
   setLockEnabled: (enabled: boolean) => void
   setUnlocked: (unlocked: boolean) => void
+  markPlanSeen: (weekIndex: number) => void
 }
 
 const KEY = 'settings'
@@ -29,6 +32,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
   locale: initialLocale(),
   lockEnabled: readJson<{ lockEnabled?: boolean }>(kv, KEY, {}).lockEnabled ?? false,
   unlocked: false,
+  lastSeenPlanWeek: readJson<{ lastSeenPlanWeek?: number }>(kv, KEY, {}).lastSeenPlanWeek ?? -1,
   setLocale: (locale) => {
     set({ locale })
     writeJson(kv, KEY, { ...readJson(kv, KEY, {}), locale })
@@ -38,4 +42,11 @@ export const useSettings = create<SettingsState>((set, get) => ({
     writeJson(kv, KEY, { ...readJson(kv, KEY, {}), lockEnabled })
   },
   setUnlocked: (unlocked) => set({ unlocked }),
+  markPlanSeen: (weekIndex) => {
+    // Only ever moves forward: regenerating an earlier week must not resurrect
+    // the badge for a plan the user has already read.
+    if (weekIndex <= get().lastSeenPlanWeek) return
+    set({ lastSeenPlanWeek: weekIndex })
+    writeJson(kv, KEY, { ...readJson(kv, KEY, {}), lastSeenPlanWeek: weekIndex })
+  },
 }))

@@ -1,16 +1,23 @@
 import { router } from 'expo-router'
+import { useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import {
   Body, Button, Card, CoachNote, Divider, Row, Screen, SectionTitle, Small, Spacer, Stat, Title,
 } from '../../components/ui'
 import { usePlan } from '../../lib/data/queries'
 import { MIN_PHASE_WEEKS } from '../../lib/plan/phase'
+import { useSettings } from '../../lib/store/settings'
 import { useT } from '../../lib/i18n/useT'
 import { colors, radius, space, type } from '../../lib/theme'
 
 export default function PlanTab() {
   const { t, locale } = useT()
   const { data: plan } = usePlan()
+  const markPlanSeen = useSettings((state) => state.markPlanSeen)
+
+  useEffect(() => {
+    if (plan) markPlanSeen(plan.weekIndex)
+  }, [plan, markPlanSeen])
 
   if (!plan) {
     return (
