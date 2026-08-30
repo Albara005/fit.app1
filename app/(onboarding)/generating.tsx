@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { Body, Button, Card, Screen, Small, Spacer, Title } from '../../components/ui'
 import { useDerivedProfile, useGeneratePlan, useSaveProfile } from '../../lib/data/queries'
+import { requestPermission } from '../../lib/notifications'
 import { useT } from '../../lib/i18n/useT'
 import { colors, space } from '../../lib/theme'
 
@@ -84,7 +85,14 @@ export default function Generating() {
         <Button
           label={t('onboarding.generatingLeave')}
           variant="secondary"
-          onPress={() => router.replace('/(tabs)/today')}
+          onPress={async () => {
+            // Asked here rather than at launch: this is the one moment the
+            // value is self-evident, because the user is in the act of
+            // leaving something unfinished. A refusal costs nothing — the
+            // plan still lands and the tab badge still shows it.
+            await requestPermission().catch(() => undefined)
+            router.replace('/(tabs)/today')
+          }}
         />
       }
     >

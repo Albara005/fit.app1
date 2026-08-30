@@ -34,10 +34,34 @@
     },
     "plugins": [
       "expo-router",
-      ["expo-localization", { "supportsRTL": true }],
-      ["expo-secure-store", { "faceIDPermission": "نستخدم البصمة لفتح التطبيق على جهازك فقط." }],
-      ["expo-camera", { "cameraPermission": "نستخدم الكاميرا لتصوير الوجبة وتحليلها. لا نحفظ الصورة." }]
+      [
+        "expo-localization",
+        {
+          "supportsRTL": true
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "نستخدم البصمة لفتح التطبيق على جهازك فقط."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "نستخدم الكاميرا لتصوير الوجبة وتحليلها. لا نحفظ الصورة."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#B7E01E"
+        }
+      ]
     ],
-    "experiments": { "typedRoutes": true }
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

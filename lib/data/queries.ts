@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
+import { translate } from '../i18n'
+import { notifyIfAway } from '../notifications'
 import { adapt, type Adaptation } from '../plan/adapt'
 import { producePlan, type PlanOutcome } from '../plan/generate'
 import { deriveProfile } from '../plan/nutrition'
 import { reviewPhase, type PhaseReview } from '../plan/phase'
 import { reviewWeek, type WeeklyReview } from '../plan/weekly'
 import type { CheckIn, DerivedProfile, MealLogEntry, Plan, Profile, WorkoutDay } from '../types'
+import { useSettings } from '../store/settings'
 import { repo, today, type ConsentKind, type WeightEntry } from './index'
 import { requestModelPlan } from './edge'
 
@@ -75,7 +78,18 @@ export function useGeneratePlan() {
         weekIndex,
         fromModel: (p, week) => requestModelPlan(p, week),
       }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.plan }),
+    onSuccess: (outcome) => {
+      void qc.invalidateQueries({ queryKey: keys.plan })
+      // Generation is a job people are invited to walk away from. This fires
+      // only for someone who took that invitation — the tab badge covers
+      // anyone still looking at the app.
+      if (!outcome.plan) return
+      const locale = useSettings.getState().locale
+      void notifyIfAway(
+        translate(locale, 'notify.planReadyTitle'),
+        translate(locale, 'notify.planReadyBody'),
+      )
+    },
   })
 }
 

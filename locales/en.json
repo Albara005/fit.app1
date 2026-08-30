@@ -321,5 +321,13 @@
     "resend": "Send a new code",
     "signOutConfirm": "Sign out? Your data stays in your account.",
     "sendFailed": "We couldn't send the code. Check your connection and try again."
+  },
+  "notify": {
+    "planReadyTitle": "Your plan is ready",
+    "planReadyBody": "Open the app to see your new week.",
+    "askTitle": "Want us to tell you when it lands?",
+    "askBody": "One notification when the plan finishes, and nothing else. Turn it off any time in your device settings.",
+    "ask": "Notify me",
+    "skip": "No thanks"
   }
 }
