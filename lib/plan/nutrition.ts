@@ -1,0 +1,105 @@
+import { KCAL_FLOOR, MAX_DEFICIT_FRACTION, MAX_WEEKLY_LOSS_FRACTION } from '../safety/gate'
+import type { ActivityLevel, DerivedProfile, Goal, NutritionTarget, Profile } from '../types'
+
+const ACTIVITY_FACTOR: Record<ActivityLevel, number> = {
+  sedentary: 1.2,
+  light: 1.375,
+  moderate: 1.55,
+  active: 1.725,
+  very_active: 1.9,
+}
+
+/** kcal in a kilogram of body fat — the constant behind every rate estimate. */
+const KCAL_PER_KG_FAT = 7700
+
+export function bmi(weightKg: number, heightCm: number): number {
+  const m = heightCm / 100
+  return round(weightKg / (m * m), 1)
+}
+
+/** Mifflin-St Jeor: the least-wrong prediction equation for non-athletes. */
+export function bmr(profile: Pick<Profile, 'sex' | 'weightKg' | 'heightCm' | 'age'>): number {
+  const base = 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age
+  return Math.round(profile.sex === 'm' ? base + 5 : base - 161)
+}
+
+export function tdee(profile: Pick<Profile, 'sex' | 'weightKg' | 'heightCm' | 'age' | 'activity'>): number {
+  return Math.round(bmr(profile) * ACTIVITY_FACTOR[profile.activity])
+}
+
+export function deriveProfile(profile: Profile): DerivedProfile {
+  return {
+    ...profile,
+    bmi: bmi(profile.weightKg, profile.heightCm),
+    bmr: bmr(profile),
+    tdee: tdee(profile),
+  }
+}
+
+/** Fraction of TDEE removed (positive) or added (negative) per goal. */
+const GOAL_ENERGY_SHIFT: Record<Goal, number> = {
+  cut: 0.2,
+  recomp: 0.05,
+  gain: -0.1,
+  strength: -0.03,
+}
+
+const PROTEIN_G_PER_KG: Record<Goal, number> = {
+  cut: 2.0,
+  recomp: 1.9,
+  gain: 1.8,
+  strength: 1.8,
+}
+
+function round(n: number, digits = 0): number {
+  const f = 10 ** digits
+  return Math.round(n * f) / f
+}
+
+/**
+ * Produces targets that already satisfy the gate. The gate still checks them —
+ * this function is not trusted, it is just not expected to be the thing that
+ * fails. Anything the model returns goes through the same gate.
+ */
+export function nutritionTarget(profile: DerivedProfile): NutritionTarget {
+  const floor = KCAL_FLOOR[profile.sex]
+  const maxDeficit = MAX_DEFICIT_FRACTION * profile.tdee
+  const maxWeeklyLoss = MAX_WEEKLY_LOSS_FRACTION * profile.weightKg
+
+  let deficit = Math.min(GOAL_ENERGY_SHIFT[profile.goal] * profile.tdee, maxDeficit)
+
+  // Cap by rate before capping by calories: a 25% deficit is still too fast for
+  // a light person, and the rate limit is the one that protects them.
+  const deficitAtMaxRate = (maxWeeklyLoss * KCAL_PER_KG_FAT) / 7
+  if (deficit > deficitAtMaxRate) deficit = deficitAtMaxRate
+
+  let kcal = Math.round(profile.tdee - deficit)
+  if (kcal < floor) {
+    kcal = floor
+    deficit = profile.tdee - kcal
+  }
+
+  // A maintenance or surplus plan has no loss target.
+  const weeklyLossTargetKg = deficit > 0 ? round((deficit * 7) / KCAL_PER_KG_FAT, 2) : 0
+
+  // Protein is set against a capped body weight: at a BMI above 30 the extra
+  // mass is not muscle, and scaling protein to it just crowds out carbohydrate.
+  const proteinRefKg = Math.min(profile.weightKg, (30 * (profile.heightCm / 100) ** 2))
+  const protein = Math.round(PROTEIN_G_PER_KG[profile.goal] * proteinRefKg)
+
+  const minFatG = Math.round(0.8 * proteinRefKg)
+  const fatFromPercent = Math.round((kcal * 0.25) / 9)
+  const fat = Math.max(minFatG, fatFromPercent)
+
+  const carbKcal = kcal - protein * 4 - fat * 9
+  const carbs = Math.max(50, Math.round(carbKcal / 4))
+
+  return {
+    kcal,
+    protein,
+    carbs,
+    fat,
+    deficit: Math.round(deficit),
+    weeklyLossTargetKg,
+  }
+}

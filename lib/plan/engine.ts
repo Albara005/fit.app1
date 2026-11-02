@@ -1,0 +1,230 @@
+import { DISHES, type Dish, type Slot } from '../nutrition/dishes'
+import { blockedPatterns } from '../safety/patterns'
+import type {
+  DerivedProfile, DietaryId, Goal, Meal, MealItem, NutritionTarget, Plan, PlannedExercise, WorkoutDay,
+} from '../types'
+import { availableTo } from './exercises'
+import { nutritionTarget } from './nutrition'
+import { hashSeed, mulberry32 } from './rng'
+import { splitFor } from './split'
+
+interface Prescription {
+  sets: number
+  reps: string
+  restSec: number
+  rpe: number
+}
+
+/** Rep ranges and rest by goal — the part a template can get right on its own. */
+const PRESCRIPTION: Record<Goal, Record<'compound' | 'accessory' | 'isolation', Prescription>> = {
+  strength: {
+    compound: { sets: 5, reps: '3-5', restSec: 180, rpe: 8 },
+    accessory: { sets: 3, reps: '6-8', restSec: 120, rpe: 7 },
+    isolation: { sets: 3, reps: '8-10', restSec: 75, rpe: 7 },
+  },
+  gain: {
+    compound: { sets: 4, reps: '6-10', restSec: 150, rpe: 8 },
+    accessory: { sets: 3, reps: '8-12', restSec: 90, rpe: 8 },
+    isolation: { sets: 3, reps: '10-15', restSec: 60, rpe: 8 },
+  },
+  recomp: {
+    compound: { sets: 3, reps: '8-10', restSec: 120, rpe: 7 },
+    accessory: { sets: 3, reps: '10-12', restSec: 75, rpe: 7 },
+    isolation: { sets: 3, reps: '12-15', restSec: 60, rpe: 7 },
+  },
+  cut: {
+    compound: { sets: 3, reps: '8-12', restSec: 90, rpe: 7 },
+    accessory: { sets: 3, reps: '10-15', restSec: 60, rpe: 7 },
+    isolation: { sets: 2, reps: '12-20', restSec: 45, rpe: 7 },
+  },
+}
+
+/** One added set every four weeks, capped. Slow progression is progression. */
+function progress(base: Prescription, weekIndex: number): Prescription {
+  const extra = Math.min(2, Math.floor(weekIndex / 4))
+  return { ...base, sets: base.sets + extra }
+}
+
+function buildWorkouts(profile: DerivedProfile, weekIndex: number): WorkoutDay[] {
+  const rng = mulberry32(hashSeed(`${profile.goal}|${profile.daysPerWeek}|${weekIndex}`))
+  const blocked = blockedPatterns(profile.injuries)
+  const pool = availableTo(profile.equipment)
+    .filter((x) => !blocked.has(x.pattern))
+    .sort((a, b) => a.id.localeCompare(b.id))
+
+  return splitFor(profile.daysPerWeek).map((template, dayIndex) => {
+    const used = new Set<string>()
+    const exercises: PlannedExercise[] = []
+
+    for (const slot of template.slots) {
+      const candidates = slot.patterns
+        .flatMap((p) => pool.filter((x) => x.pattern === p))
+        .filter((x) => !used.has(x.id))
+      // Rotate within the preferred pattern rather than always taking the same
+      // lift: the same profile gets a different-but-equivalent week each block.
+      const chosen = candidates[Math.floor(rng() * Math.max(1, candidates.length))] ?? candidates[0]
+      if (!chosen) continue
+
+      used.add(chosen.id)
+      const rx = progress(PRESCRIPTION[profile.goal][slot.emphasis], weekIndex)
+      exercises.push({
+        id: chosen.id,
+        name: chosen.name,
+        pattern: chosen.pattern,
+        muscles: chosen.muscles,
+        equipment: chosen.equipment,
+        ...rx,
+      })
+    }
+
+    const estMinutes = exercises.reduce((m, x) => m + x.sets * (x.restSec / 60 + 0.75), 8)
+
+    return {
+      id: `w${weekIndex}-d${dayIndex}`,
+      dayIndex,
+      title: template.title,
+      focus: template.focus,
+      rest: false,
+      estMinutes: Math.round(estMinutes),
+      exercises,
+    }
+  })
+}
+
+const SLOT_SHARE: Record<Slot, number> = { breakfast: 0.25, lunch: 0.35, dinner: 0.3, snack: 0.1 }
+
+/** Diets are exclusions; halal is assumed everywhere so it never filters. */
+const FILTERING_DIETS: DietaryId[] = ['vegetarian', 'vegan', 'no_red_meat', 'low_carb', 'diabetic']
+
+function dishPool(profile: DerivedProfile, slot: Slot): Dish[] {
+  const required = profile.dietary.filter((d) => FILTERING_DIETS.includes(d))
+  return DISHES.filter(
+    (dish) =>
+      dish.slots.includes(slot) &&
+      !dish.contains.some((a) => profile.allergies.includes(a)) &&
+      required.every((d) => dish.fits.includes(d)),
+  ).sort((a, b) => a.id.localeCompare(b.id))
+}
+
+function clampGrams(dish: Dish, grams: number): number {
+  return Math.round(Math.min(dish.maxG, Math.max(dish.minG, grams)) / 5) * 5
+}
+
+function toItem(dish: Dish, grams: number): MealItem {
+  const f = grams / 100
+  return {
+    name: dish.name,
+    grams,
+    kcal: Math.round(dish.per100g.kcal * f),
+    protein: Math.round(dish.per100g.protein * f),
+    carbs: Math.round(dish.per100g.carbs * f),
+    fat: Math.round(dish.per100g.fat * f),
+    ingredients: dish.ingredients,
+  }
+}
+
+function buildMeal(
+  profile: DerivedProfile,
+  target: NutritionTarget,
+  slot: Slot,
+  rng: () => number,
+  index: number,
+): Meal {
+  const pool = dishPool(profile, slot)
+  const byRole = (role: Dish['role']) => pool.filter((d) => d.role === role)
+  const share = SLOT_SHARE[slot]
+  const items: MealItem[] = []
+
+  const rotate = <T,>(list: T[]): T | undefined =>
+    list.length === 0 ? undefined : list[Math.floor(rng() * list.length)]
+
+  // Protein first: it is the macro a template must not miss.
+  const whole = byRole('whole')
+  const protein = rotate(byRole('protein')) ?? rotate(whole)
+  if (protein) {
+    const need = target.protein * share
+    const perG = protein.per100g.protein / 100
+    items.push(toItem(protein, clampGrams(protein, perG > 0 ? need / perG : protein.servingG)))
+  }
+
+  if (slot === 'lunch' || slot === 'dinner') {
+    const veg = rotate(byRole('veg'))
+    if (veg) items.push(toItem(veg, veg.servingG))
+  }
+
+  const spent = items.reduce((k, i) => k + i.kcal, 0)
+  const carb = rotate(byRole('carb'))
+  if (carb) {
+    const remaining = Math.max(0, target.kcal * share - spent)
+    const perG = carb.per100g.kcal / 100
+    items.push(toItem(carb, clampGrams(carb, remaining / perG)))
+  }
+
+  const fatSoFar = items.reduce((g, i) => g + i.fat, 0)
+  if (fatSoFar < target.fat * share - 6) {
+    const fat = rotate(byRole('fat'))
+    if (fat) {
+      const need = target.fat * share - fatSoFar
+      items.push(toItem(fat, clampGrams(fat, (need * 100) / fat.per100g.fat)))
+    }
+  }
+
+  const titles: Record<Slot, { ar: string; en: string }> = {
+    breakfast: { ar: 'فطور', en: 'Breakfast' },
+    lunch: { ar: 'غداء', en: 'Lunch' },
+    dinner: { ar: 'عشاء', en: 'Dinner' },
+    snack: { ar: 'سناك', en: 'Snack' },
+  }
+
+  return { id: `meal-${index}-${slot}`, slot, title: titles[slot], items }
+}
+
+function rationale(profile: DerivedProfile, weekIndex: number): { ar: string; en: string } {
+  if (weekIndex === 0) {
+    return {
+      ar: 'أسبوعك الأول تأسيس. الأوزان أخف من قدرتك عمداً — نبي نشوف كيف يستجيب جسمك قبل ما نضغط.',
+      en: 'Week one is a baseline. The loads are deliberately light — we want to see how you respond before pushing.',
+    }
+  }
+  const byGoal: Record<Goal, { ar: string; en: string }> = {
+    cut: {
+      ar: 'نحافظ على العضلة والسعرات نازلة بهدوء. الحمل ثابت والتكرارات أعلى.',
+      en: 'Holding muscle while calories come down. Load stays put, reps go up.',
+    },
+    recomp: {
+      ar: 'سعرات قريبة من الثبات وحمل يزيد تدريجياً — هذا الطريق الأبطأ والأثبت.',
+      en: 'Near maintenance with load creeping up — the slower, steadier road.',
+    },
+    gain: {
+      ar: 'زيادة محسوبة. لو الوزن طلع أسرع من اللازم نرجّع السعرات.',
+      en: 'A measured surplus. If the scale moves too fast, calories come back down.',
+    },
+    strength: {
+      ar: 'تكرارات أقل وراحة أطول. جودة التكرار أهم من عددها هذا الأسبوع.',
+      en: 'Fewer reps, longer rests. Rep quality matters more than rep count this week.',
+    },
+  }
+  return byGoal[profile.goal]
+}
+
+/**
+ * The rules-based plan. It is both the week-one plan and the fallback when the
+ * model fails twice — which is why it has to be genuinely good, not a stub.
+ */
+export function buildTemplatePlan(profile: DerivedProfile, weekIndex = 0): Plan {
+  const target = nutritionTarget(profile)
+  const rng = mulberry32(hashSeed(`${profile.goal}|${profile.allergies.join()}|${weekIndex}`))
+  const slots: Slot[] = ['breakfast', 'lunch', 'dinner', 'snack']
+
+  return {
+    id: `plan-${weekIndex}`,
+    createdAt: new Date().toISOString(),
+    weekIndex,
+    source: 'template',
+    locale: profile.locale,
+    nutrition: target,
+    days: buildWorkouts(profile, weekIndex),
+    meals: slots.map((slot, i) => buildMeal(profile, target, slot, rng, i)),
+    rationale: rationale(profile, weekIndex),
+  }
+}
