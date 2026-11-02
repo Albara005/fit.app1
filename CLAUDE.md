@@ -40,7 +40,7 @@ There is no lint script. Running vitest directly skips the edge sync, and `tests
 - `patterns.ts`, `substitute.ts`: an injury blocks whole movement patterns (a pattern → injury map, so the user is told why); substitution is deterministic by primary-muscle overlap and drops the slot rather than train the wrong muscle.
 - `tests/nutrition/dishes-gate.test.ts` holds each dish's hand-written `contains` list to what the gate finds in that dish.
 
-**Reviews and charts.** Each review's reported change is derived from the line it decides on: `weeklyLine` (least-squares fit over the last 14 weigh-ins) and `phaseLine` (mean of the first window → mean of the last, over 60). The review queries return the readings they computed from (`WithReadings` in `lib/data/queries.ts`), and `components/TrendChart.tsx` draws the line over exactly those — never a second fetch, never a fit of its own. Adding a weight resets both cached reviews (reset, not invalidate: an invalidated review stays on screen, Apply live, while it refetches), and the weekly review computes only after the weight entered on its first step is saved.
+**Reviews and charts.** Each review's reported change is derived from the line it decides on: `weeklyLine` (least-squares fit over the last 14 weigh-ins) and `phaseLine` (mean of the first window → mean of the last, over 60). Each review returns that `line` with it, and the review queries return the readings they computed from (`WithReadings` in `lib/data/queries.ts`); `components/TrendChart.tsx` draws the review's own line over exactly those readings — never a second fetch, never a fit of its own. Adding a weight resets both cached reviews (reset, not invalidate: an invalidated review stays on screen, Apply live, while it refetches), and the weekly review computes only after the weight entered on its first step is saved.
 
 **Data.** `lib/data/repo.ts` is the interface; `local.ts` (browser storage, keys prefixed `peak:`) and `supabase.ts` are the drivers, chosen once by `isSupabaseConfigured()`. Screens use the TanStack hooks in `lib/data/queries.ts`. The Supabase driver persists its session through `expo-secure-store`, never AsyncStorage.
 
@@ -50,13 +50,13 @@ There is no lint script. Running vitest directly skips the edge sync, and `tests
 
 **What the model sees** is built by copying keys *out* through the allowlist in `lib/privacy/modelSafe.ts`, so a new column cannot leak by default. The privacy screen renders the same list.
 
-**Onboarding draft** (`lib/store/onboarding.ts`) lives in memory only. Editing a profile must `hydrate(profile)` first, or saving writes the defaults — allergies included — over the real values. Injuries and allergies track `answered`: an empty list is not an answer.
+**Onboarding draft** (`lib/store/onboarding.ts`) lives in memory only. Editing a profile must `hydrate(profile)` first, or saving writes the defaults — allergies included — over the real values. A draft not `started` by `reset()` or `hydrate()` (after a reload or a typed URL) is caught for every step in `app/(onboarding)/_layout.tsx`. Injuries and allergies track `answered`: an empty list is not an answer (`noneDeclared`, `allAnswered`). The save and generate hooks stamp the app's current locale themselves.
 
 **Vitest cannot import `react-native`** (Flow syntax). Logic that needs tests lives in `lib/` without RN imports (`lib/plan/session.ts` and `lib/auth/credentials.ts` exist for that reason). `lib/design/tokens.ts` must stay RN-free because the contrast test imports it; platform-dependent typography goes in `lib/design/typography.ts`.
 
 ## UI and design system
 
-`design-system/fit/MASTER.md` records the design decisions, including which ui-ux-pro-max and dataviz recommendations were rejected and why. Values live in `lib/design/tokens.ts` (two themes); screens get colour from `useTheme()` / `makeStyles()` in `lib/design/theme.ts` and are built from `components/ui.tsx`. No hex values, `left`/`right`, or `fontWeight` in screens.
+`design-system/fit/MASTER.md` records the design decisions, including which ui-ux-pro-max and dataviz recommendations were rejected and why. Values live in `lib/design/tokens.ts` (two themes); screens get colour from `useTheme()` / `makeStyles()` in `lib/design/theme.ts` and are built from `components/ui.tsx`. No hex values, `left`/`right`, or `fontWeight` in screens. `Button` runs an async `onPress` once at a time (`lib/singleFlight.ts`), so screens do not guard their own submits.
 
 - `tests/contrast.test.ts` asserts every colour pairing a component draws, in both themes. When a component starts drawing a new pairing, add it there first.
 - Fonts are self-hosted in `assets/fonts/` (Noto Kufi Arabic 700, Noto Sans Arabic 400/700), and each family name is a single weight file: never combine them with `fontWeight`. Never put `letterSpacing` or `textTransform` on localised text.
