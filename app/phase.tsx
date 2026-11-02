@@ -1,15 +1,16 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { Text, View } from 'react-native'
+import { TrendChart } from '../components/TrendChart'
 import {
   Body, Button, Caption, Card, CoachLine, Divider, Row, Screen, Section, Title,
 } from '../components/ui'
-import { useDerivedProfile, useGeneratePlan, usePhaseReview, useSaveProfile } from '../lib/data/queries'
+import { useDerivedProfile, useGeneratePlan, usePhaseReview, useSaveProfile, useWeights } from '../lib/data/queries'
 import { makeStyles } from '../lib/design/theme'
 import { space } from '../lib/design/tokens'
 import { type } from '../lib/design/typography'
 import { useT } from '../lib/i18n/useT'
-import { reportValue, shareText } from '../lib/plan/phase'
+import { phaseLine, reportValue, shareText } from '../lib/plan/phase'
 import { shareOrCopy, type ShareOutcome } from '../lib/share'
 
 const GOAL_KEY: Record<string, string> = {
@@ -29,6 +30,8 @@ export default function Phase() {
   const s = useStyles()
   const profile = useDerivedProfile()
   const review = usePhaseReview(profile)
+  // The same sixty readings the verdict is made on.
+  const { data: weights } = useWeights(60)
   const saveProfile = useSaveProfile()
   const generate = useGeneratePlan()
   const [outcome, setOutcome] = useState<ShareOutcome | null>(null)
@@ -53,6 +56,7 @@ export default function Phase() {
   }
 
   const suggested = data.suggestedGoal
+  const trend = phaseLine((weights ?? []).map((w) => w.weightKg))
   const text = shareText(data, locale)
 
   async function apply() {
@@ -90,6 +94,12 @@ export default function Phase() {
       <Body muted>{t('phase.intro')}</Body>
       <Title>{data.headline[locale]}</Title>
       <CoachLine>{data.detail[locale]}</CoachLine>
+
+      {trend ? (
+        <Card>
+          <TrendChart readings={weights ?? []} line={trend} />
+        </Card>
+      ) : null}
 
       <Section title={t('phase.report')}>
         <Card>

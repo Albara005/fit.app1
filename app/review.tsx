@@ -1,16 +1,18 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
+import { TrendChart } from '../components/TrendChart'
 import {
   Body, Button, Caption, Card, CoachLine, Grow, Heading, Meter, Row, Screen, Section, Stat, Stepper, Title,
 } from '../components/ui'
 import {
-  useAddWeight, useDerivedProfile, useGeneratePlan, useSaveProfile, useWeeklyReview,
+  useAddWeight, useDerivedProfile, useGeneratePlan, useSaveProfile, useWeeklyReview, useWeights,
 } from '../lib/data/queries'
 import { today } from '../lib/data/repo'
 import { space } from '../lib/design/tokens'
 import { ltr } from '../lib/i18n'
 import { useT } from '../lib/i18n/useT'
+import { weeklyLine } from '../lib/plan/weekly'
 
 /**
  * Loop two, in two minutes: one number in, then what happened, what changed,
@@ -28,6 +30,8 @@ export default function Review() {
   // on mount, the review ran without it and never ran again: it reported a
   // trend from every reading except the one this loop asks for.
   const review = useWeeklyReview(logged ? profile : null)
+  // The same fourteen readings the review decides from.
+  const { data: weights } = useWeights(14)
   const [weight, setWeight] = useState(profile?.weightKg ?? 80)
 
   if (!profile) {
@@ -60,6 +64,7 @@ export default function Review() {
   }
 
   const data = review.data
+  const trend = weeklyLine((weights ?? []).map((w) => w.weightKg))
 
   return (
     <Screen
@@ -96,6 +101,12 @@ export default function Review() {
             </Row>
             <Meter value={data.adherence} max={1} label={t('review.adherence')} />
           </Card>
+
+          {trend ? (
+            <Card>
+              <TrendChart readings={weights ?? []} line={trend} />
+            </Card>
+          ) : null}
 
           {/* What happened, what changed, what is new — in that order, one each. */}
           {data.cards.map((card) =>

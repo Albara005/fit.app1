@@ -1,5 +1,5 @@
 import { ltr, translate } from '../i18n'
-import type { CheckIn, DerivedProfile, Goal, Locale } from '../types'
+import type { CheckIn, DerivedProfile, Goal, Locale, TrendLine } from '../types'
 import { bmi } from './nutrition'
 
 /**
@@ -64,11 +64,23 @@ function mean(values: readonly number[]): number {
  * A phase verdict that a single dehydrated morning can flip is not a verdict.
  */
 export function phaseChangeKg(weights: readonly number[]): number | null {
+  const line = phaseLine(weights)
+  return line === null ? null : round(line.to.kg - line.from.kg, 2)
+}
+
+/**
+ * The phase review's line: from the mean of the first window to the mean of the
+ * last, each placed at its window's centre. Not a fitted trend — this is the
+ * comparison the verdict is made on, so it is the one a chart should show.
+ */
+export function phaseLine(weights: readonly number[]): TrendLine | null {
   if (weights.length < 4) return null
   const window = Math.min(3, Math.floor(weights.length / 2))
-  const start = mean(weights.slice(0, window))
-  const end = mean(weights.slice(-window))
-  return round(end - start, 2)
+  const centre = (window - 1) / 2
+  return {
+    from: { at: centre, kg: mean(weights.slice(0, window)) },
+    to: { at: weights.length - 1 - centre, kg: mean(weights.slice(-window)) },
+  }
 }
 
 /** Never proposes a goal the safety gate would then refuse to build. */

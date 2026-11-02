@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildTemplatePlan } from '../../lib/plan/engine'
-import { phaseChangeKg, reportValue, reviewPhase, shareText, type PhaseInput } from '../../lib/plan/phase'
+import { phaseChangeKg, phaseLine, reportValue, reviewPhase, shareText, type PhaseInput } from '../../lib/plan/phase'
 import { gate } from '../../lib/safety/gate'
 import { makeProfile } from '../factories'
 import type { CheckIn } from '../../lib/types'
@@ -182,5 +182,26 @@ describe('Arabic number agreement', () => {
         expect(visible(reportValue(line, 'ar')), `${weeks}w/${line.key}`).not.toMatch(/\d+\s*أسبوع$/)
       }
     }
+  })
+})
+
+describe('phaseLine', () => {
+  const weights = [86, 85.6, 86.1, 85.2, 84.9, 85.0, 84.4, 84.1]
+
+  it('is the comparison the verdict is made on', () => {
+    // A chart of the phase draws this line; it must rise or fall by exactly the
+    // change the verdict reports, or the picture contradicts the decision.
+    const line = phaseLine(weights)!
+    expect(Math.round((line.to.kg - line.from.kg) * 100) / 100).toBe(phaseChangeKg(weights))
+  })
+
+  it('places each end at the centre of its window', () => {
+    const line = phaseLine(weights)!
+    expect(line.from.at).toBe(1) // readings 0–2
+    expect(line.to.at).toBe(6) // readings 5–7
+  })
+
+  it('needs four readings, as the verdict does', () => {
+    expect(phaseLine([86, 85, 84])).toBeNull()
   })
 })

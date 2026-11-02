@@ -354,5 +354,15 @@
     "askBody": "One notification when the plan finishes, and nothing else. Turn it off any time in your device settings.",
     "ask": "Notify me",
     "skip": "No thanks"
+  },
+  "chart": {
+    "title": "Your weight and its trend",
+    "why": "I read the line, not any one day.",
+    "weighIns": "Weigh-ins",
+    "trend": "Trend",
+    "summary": "From {{first}} to {{last}} kg",
+    "showTable": "Show as a table",
+    "hideTable": "Hide the table",
+    "date": "Date"
   }
 }

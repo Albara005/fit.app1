@@ -77,6 +77,9 @@ const PAIRS: readonly [fg: Role, bg: Role, min: number][] = [
   // Switch thumb against its track, off and on.
   ['surface', 'lineStrong', NON_TEXT],
   ['surface', 'primary', NON_TEXT],
+  // Chart marks on the card they sit on.
+  ['dataEmphasis', 'surface', NON_TEXT],
+  ['dataContext', 'surface', NON_TEXT],
 ]
 
 const HEX = /^#[0-9A-F]{6}$/i

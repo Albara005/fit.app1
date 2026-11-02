@@ -1,5 +1,5 @@
 import { KCAL_FLOOR, MAX_DEFICIT_FRACTION } from '../safety/gate'
-import type { CheckIn, DerivedProfile, NutritionTarget, Plan } from '../types'
+import type { CheckIn, DerivedProfile, NutritionTarget, Plan, TrendLine } from '../types'
 import { buildTemplatePlan } from './engine'
 
 /**
@@ -52,7 +52,12 @@ export interface WeeklyReview {
  * and scaling a per-reading slope by 7 assumes daily weigh-ins that nobody
  * actually does.
  */
-export function weightTrend(weights: readonly number[]): number | null {
+/**
+ * The least-squares line through the readings, by reading order. Exported so
+ * the chart draws the very line this review decides from — a chart fitted
+ * separately could show a trend the coach did not act on.
+ */
+export function trendFit(weights: readonly number[]): { intercept: number; slope: number } | null {
   if (weights.length < 3) return null
   const n = weights.length
   const meanX = (n - 1) / 2
@@ -64,7 +69,21 @@ export function weightTrend(weights: readonly number[]): number | null {
     den += (i - meanX) ** 2
   }
   if (den === 0) return null
-  return (num / den) * (n - 1)
+  const slope = num / den
+  return { intercept: meanY - slope * meanX, slope }
+}
+
+/** The weekly review's line: the least-squares fit, across the readings it saw. */
+export function weeklyLine(weights: readonly number[]): TrendLine | null {
+  const fit = trendFit(weights)
+  if (fit === null) return null
+  const last = weights.length - 1
+  return { from: { at: 0, kg: fit.intercept }, to: { at: last, kg: fit.intercept + fit.slope * last } }
+}
+
+export function weightTrend(weights: readonly number[]): number | null {
+  const line = weeklyLine(weights)
+  return line === null ? null : line.to.kg - line.from.kg
 }
 
 function adjustNutrition(

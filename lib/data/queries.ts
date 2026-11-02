@@ -119,8 +119,12 @@ export function useAdaptedDay(day: WorkoutDay | null, checkIn: CheckIn | null | 
   return adapt(day, checkIn)
 }
 
-export function useWeights() {
-  return useQuery({ queryKey: keys.weights, queryFn: () => repo().listWeights() })
+/**
+ * The most recent `limit` weigh-ins, oldest first. A review charts the same
+ * slice it decides from, so pass the limit that review uses.
+ */
+export function useWeights(limit = 30) {
+  return useQuery({ queryKey: [...keys.weights, limit], queryFn: () => repo().listWeights(limit) })
 }
 
 export function useAddWeight() {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { reviewWeek, weightTrend, type WeekLog } from '../../lib/plan/weekly'
+import { reviewWeek, trendFit, weeklyLine, weightTrend, type WeekLog } from '../../lib/plan/weekly'
 import { gate } from '../../lib/safety/gate'
 import { makeProfile } from '../factories'
 
@@ -29,6 +29,37 @@ describe('weightTrend', () => {
     expect(weightTrend([85, 84.8, 84.6, 84.4])).toBeCloseTo(-0.6, 5)
     // Same week, weighed daily. Same answer.
     expect(weightTrend([85, 84.9, 84.8, 84.7, 84.6, 84.5, 84.4])).toBeCloseTo(-0.6, 5)
+  })
+})
+
+describe('trendFit', () => {
+  it('needs three readings, as the review does', () => {
+    expect(trendFit([80, 79.8])).toBeNull()
+  })
+
+  it('passes through a perfectly straight series', () => {
+    const fit = trendFit([80, 79.8, 79.6, 79.4])!
+    expect(fit.intercept).toBeCloseTo(80, 10)
+    expect(fit.slope).toBeCloseTo(-0.2, 10)
+  })
+
+  it('is the line weightTrend reads: its rise across the span is the trend', () => {
+    // The chart draws trendFit; the review decides from weightTrend. If these
+    // ever disagree, the chart explains a decision the coach did not make.
+    const readings = [85, 84.6, 84.9, 84.3, 84.4, 84.0]
+    const fit = trendFit(readings)!
+    const across = fit.slope * (readings.length - 1)
+    expect(across).toBeCloseTo(weightTrend(readings)!, 10)
+  })
+})
+
+describe('weeklyLine', () => {
+  it('spans the readings and rises by exactly the trend the review acts on', () => {
+    const readings = [85, 84.6, 84.9, 84.3, 84.4, 84.0]
+    const line = weeklyLine(readings)!
+    expect(line.from.at).toBe(0)
+    expect(line.to.at).toBe(readings.length - 1)
+    expect(line.to.kg - line.from.kg).toBeCloseTo(weightTrend(readings)!, 10)
   })
 })
 

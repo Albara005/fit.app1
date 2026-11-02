@@ -45,6 +45,14 @@ export interface Palette {
   /** The sand of the Peak mark. Wordmark and secondary data only. */
   sand: string
 
+  /**
+   * Charts use the emphasis form: the line the coach reads in the brand hue,
+   * the raw readings as gray context. Both validated with the dataviz skill's
+   * checker against each theme's card surface (see design-system MASTER.md).
+   */
+  dataEmphasis: string
+  dataContext: string
+
   scrim: string
 }
 
@@ -71,6 +79,8 @@ export const palettes: Record<ThemeName, Palette> = {
     danger: '#E5614A',
     dangerSoft: '#2B1512',
     sand: '#E9CCA6',
+    dataEmphasis: '#B7E01E',
+    dataContext: '#5A7F5C',
     scrim: 'rgba(0, 0, 0, 0.6)',
   },
   light: {
@@ -97,6 +107,8 @@ export const palettes: Record<ThemeName, Palette> = {
     danger: '#B4301C',
     dangerSoft: '#FBE6E2',
     sand: '#7A5A2E',
+    dataEmphasis: '#4F690D',
+    dataContext: '#8C9887',
     scrim: 'rgba(11, 20, 12, 0.45)',
   },
 }
@@ -131,7 +143,13 @@ export const type = {
   bodyStrong: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 26 },
   label: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 22 },
   caption: { fontFamily: fonts.body, fontSize: 13, lineHeight: 20 },
-  /** Tabular figures: a stepper going 9 → 10 must not shift its own label. */
+  /**
+   * A standalone value keeps proportional figures: equal-width digits make a
+   * large "121" look loose. Tabular figures are for values that change in place
+   * (a stepper going 9 → 10 must not shift its label) or line up in a column.
+   */
+  figure: { fontFamily: fonts.bodyBold, fontSize: 28, lineHeight: 36 },
+  figureSmall: { fontFamily: fonts.bodyBold, fontSize: 18, lineHeight: 26 },
   numeral: { fontFamily: fonts.bodyBold, fontSize: 28, lineHeight: 36, fontVariant: TABULAR },
   numeralSmall: { fontFamily: fonts.bodyBold, fontSize: 18, lineHeight: 26, fontVariant: TABULAR },
 } as const

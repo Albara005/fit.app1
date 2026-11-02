@@ -817,8 +817,8 @@ export function Stat({
 const useStatStyles = makeStyles((p) => ({
   stat: { gap: 2 },
   line: { flexDirection: 'row', alignItems: 'baseline', gap: space.xs },
-  value: { ...type.numeral, color: p.text },
-  valueSmall: { ...type.numeralSmall, color: p.text },
+  value: { ...type.figure, color: p.text },
+  valueSmall: { ...type.figureSmall, color: p.text },
   unit: { ...type.caption, color: p.textMuted },
   label: { ...type.caption, color: p.textMuted },
 }))

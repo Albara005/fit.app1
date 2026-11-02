@@ -189,3 +189,14 @@ export interface MealLogEntry {
   /** User-entered truth. Feeds dish memory; never overwritten by the model. */
   correctedKcal?: number
 }
+
+/**
+ * The line a review decided from, in reading order: `at` is a position along
+ * the readings (fractional where a line starts mid-window), `kg` its height.
+ * Charts draw this rather than fitting their own, so they cannot show a trend
+ * the coach did not act on.
+ */
+export interface TrendLine {
+  from: { at: number; kg: number }
+  to: { at: number; kg: number }
+}

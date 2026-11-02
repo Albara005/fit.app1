@@ -57,7 +57,8 @@ Theme follows the system by default; the user can pin light or dark in the profi
 | `bodyStrong` | Noto Sans Arabic 700 | 16 / 26 | Emphasis, button labels |
 | `label` | Noto Sans Arabic 700 | 14 / 22 | Field labels, chips |
 | `caption` | Noto Sans Arabic 400 | 13 / 20 | Floor — nothing smaller |
-| `numeral` / `numeralSmall` | Noto Sans Arabic 700, `tabular-nums` | 28 / 36 · 18 / 26 | Values that change in place |
+| `figure` / `figureSmall` | Noto Sans Arabic 700, proportional | 28 / 36 · 18 / 26 | Standalone values (`Stat`) |
+| `numeral` / `numeralSmall` | Noto Sans Arabic 700, `tabular-nums` | 28 / 36 · 18 / 26 | Values that change in place (stepper, scale) |
 
 - Base is 16 (the old body was 15). Line height ≈ 1.6: Arabic has tall ascenders and stacked marks; Kufi clips if set tighter.
 - **Never set `fontWeight` with these families.** Each family name is one weight file; the browser would embolden bold again.
@@ -96,6 +97,26 @@ Subtle (dial 3/10). `press 120ms · state 200ms · screen 280ms`; exits run at 7
 | `Field` | Visible label above, hint below, error inline under the field — never placeholder-as-label |
 | `Stat` | Numeral + unit + caption label |
 | `Icon` | Hand-drawn SVG paths on `react-native-svg`; 1.75 stroke, 24 box; decorative icons hidden from the accessibility tree |
+
+## Charts
+
+Built with the dataviz skill; one chart today, `components/TrendChart.tsx`, in both reviews.
+
+- **Form: emphasis.** The line the coach decided from in the brand hue, the raw weigh-ins as gray context. Two layers, so a legend (keys drawn like their marks) even though it is one measure.
+- **The line is passed in, never fitted in the chart.** The weekly review draws `weeklyLine` (its least-squares fit); the phase review draws `phaseLine` (first-window mean to last-window mean — the comparison its verdict uses). Each review's number is derived from its line, and tests pin the two together. A chart that fits its own line can show a trend the coach did not act on.
+- **Same slice as the decision:** 14 readings for the weekly review, 60 for the phase, matching what each one reads.
+- **Marks:** 2px round line; 8px dots with a 2px surface ring; hairline solid gridlines in `line`; text only in text tokens, never the data colour.
+- **Interaction:** press or drag snaps a crosshair to the nearest reading. The readout always shows a value (the latest until one is chosen), and a table view lists every reading, so nothing is reachable only by hovering.
+- **Direction:** time runs with reading direction — oldest on the right in Arabic, like every other progress mark here. SVG text uses `textAnchor="middle"` only: `start`/`end` follow the text direction (under `dir="rtl"` a start-anchored tick label grew into the plot), and native SVG does not inherit that direction at all.
+
+| Token | Dark | Light |
+|---|---|---|
+| `dataEmphasis` | `#B7E01E` | `#4F690D` |
+| `dataContext` | `#5A7F5C` | `#8C9887` |
+
+Validated with the skill's checker against each card surface. Light passes every check. Dark fails one, deliberately: the lime sits above the dark lightness band (OKLCH L 0.847 vs a 0.67 ceiling). Every in-band lime collapses its separation from the gray to ΔE 13.9 — below the normal-vision floor of 15, a hard fail no labelling excuses — and darkening the gray instead drops it under 3:1. The band exists so eight categorical hues carry equal weight; in the emphasis form the emphasised series is meant to dominate, and a 2px line carries little glare. The gray's chroma-floor result is by design: context is meant to read as gray.
+
+Standalone values (`Stat`) use proportional figures (`figure`); tabular figures are for values that change in place (stepper) or align in a column (axis ticks, the table view).
 
 ## Accessibility props
 
