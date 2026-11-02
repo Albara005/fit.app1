@@ -40,6 +40,13 @@ describe('weekly review', () => {
     expect(r.cards[1]!.body.ar).toContain('4')
   })
 
+  it('counts two days in the dual, not as "2 أيام"', () => {
+    const r = reviewWeek(makeProfile({ daysPerWeek: 3 }), log({ sessionsCompleted: 0 }))
+    expect(r.nextProfile.daysPerWeek).toBe(2)
+    expect(r.cards[1]!.body.ar).toContain('يومين')
+    expect(r.cards[1]!.body.ar).not.toContain('2 أيام')
+  })
+
   it('never drops below two days a week', () => {
     const r = reviewWeek(makeProfile({ daysPerWeek: 2 }), log({ sessionsCompleted: 0 }))
     expect(r.nextProfile.daysPerWeek).toBe(2)

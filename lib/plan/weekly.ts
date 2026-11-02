@@ -2,6 +2,17 @@ import { KCAL_FLOOR, MAX_DEFICIT_FRACTION } from '../safety/gate'
 import type { CheckIn, DerivedProfile, NutritionTarget, Plan } from '../types'
 import { buildTemplatePlan } from './engine'
 
+/**
+ * Arabic does not count as "N + plural": one and two have forms of their own,
+ * and "2 أيام" reads as a mistake — in the very case low adherence produces,
+ * a three-day week cut to two. Three to ten take the plural.
+ */
+function daysAr(n: number): string {
+  if (n === 1) return 'يوم واحد'
+  if (n === 2) return 'يومين'
+  return `${n} أيام`
+}
+
 export interface WeekLog {
   weekIndex: number
   sessionsPlanned: number
@@ -155,8 +166,8 @@ function buildCards(
     ? {
         // Kept free of its own numbers: the sentence before it already names
         // the real one, and an invented "four beats six" contradicts it.
-        ar: `نزّلت الأسبوع إلى ${profile.daysPerWeek} أيام. يوم تكمله أفضل من يومين تفوّتهما.`,
-        en: `I cut the week to ${profile.daysPerWeek} days. Days you finish beat days you skip.`,
+        ar: `نزّلت الأسبوع إلى ${daysAr(profile.daysPerWeek)}. يوم تكمله أفضل من يومين تفوّتهما.`,
+        en: `I cut the week to ${profile.daysPerWeek} ${profile.daysPerWeek === 1 ? 'day' : 'days'}. Days you finish beat days you skip.`,
       }
     : codes.includes('STALLED')
       ? {
