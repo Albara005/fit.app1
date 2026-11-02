@@ -603,6 +603,9 @@ export function Stepper({
     timer.current = setInterval(() => {
       current.current = clamp(current.current + dir * step)
       onChange(current.current)
+      // At the limit the held button turns disabled, and a disabled Pressable
+      // may never report the release — so the repeat stops itself.
+      if (current.current === (dir === 1 ? max : min)) stop()
     }, 80)
   }
   useEffect(() => stop, [])
@@ -615,7 +618,10 @@ export function Stepper({
         accessibilityLabel={t(dir === 1 ? 'common.increase' : 'common.decrease', { label })}
         aria-disabled={atLimit}
         disabled={atLimit}
-        onPress={() => onChange(clamp(value + dir * step))}
+        onPress={() => {
+          stop()
+          onChange(clamp(value + dir * step))
+        }}
         onLongPress={() => hold(dir)}
         onPressOut={stop}
         style={({ pressed }) => [s.side, pressed && s.pressed, atLimit && s.inert]}

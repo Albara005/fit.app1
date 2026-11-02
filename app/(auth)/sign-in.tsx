@@ -1,5 +1,5 @@
 import { router } from 'expo-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Wordmark } from '../../components/Brand'
 import { Body, Button, Field, Screen, Spacer, Title } from '../../components/ui'
 import { isCodeShaped, isEmailShaped } from '../../lib/auth/credentials'
@@ -16,12 +16,18 @@ export default function SignIn() {
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // A ref, not the busy state: two Enter presses land before a re-render, and
+  // each would send its own request — the second verify failing on a code the
+  // first already used.
+  const inFlight = useRef(false)
 
   async function send() {
+    if (inFlight.current) return
     if (!isEmailShaped(email)) {
       setError(t('auth.invalidEmail'))
       return
     }
+    inFlight.current = true
     setBusy(true)
     setError(null)
     try {
@@ -32,15 +38,18 @@ export default function SignIn() {
       // telling someone to check theirs is advice they cannot act on.
       setError(t('auth.sendFailed'))
     } finally {
+      inFlight.current = false
       setBusy(false)
     }
   }
 
   async function verify() {
+    if (inFlight.current) return
     if (!isCodeShaped(code)) {
       setError(t('auth.invalidCode'))
       return
     }
+    inFlight.current = true
     setBusy(true)
     setError(null)
     try {
@@ -51,6 +60,7 @@ export default function SignIn() {
     } catch {
       setError(t('auth.failed'))
     } finally {
+      inFlight.current = false
       setBusy(false)
     }
   }
@@ -63,7 +73,7 @@ export default function SignIn() {
         ) : (
           <>
             <Button label={t('auth.verify')} loading={busy} onPress={verify} />
-            <Button label={t('auth.resend')} variant="quiet" onPress={send} />
+            <Button label={t('auth.resend')} variant="quiet" disabled={busy} onPress={send} />
           </>
         )
       }

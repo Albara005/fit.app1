@@ -1,5 +1,5 @@
 import { router } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { StepProgress } from '../../components/StepProgress'
 import { Body, Button, Choice, Screen, Title } from '../../components/ui'
 import { useConsents, useProfile, useSaveProfile, useSetConsent } from '../../lib/data/queries'
@@ -27,6 +27,10 @@ export default function ConsentStep() {
 
   // Untouched means "as saved". Starting both at false meant a returning user
   // editing their weight silently revoked the transfer consent they had given.
+  // Covers the two consent writes as well as the profile save: a second tap in
+  // that window wrote every record twice and started generation twice.
+  const submitting = useRef(false)
+  const [busy, setBusy] = useState(false)
   const [processingChoice, setProcessing] = useState<boolean | null>(null)
   const [transferChoice, setTransfer] = useState<boolean | null>(null)
   const processing = processingChoice ?? saved?.processing ?? false
@@ -34,20 +38,27 @@ export default function ConsentStep() {
 
   async function accept() {
     // Never relies on the redirect above having fired first.
-    if (unanswered) return
-    // Two separate records, because they are two separate permissions. Bundling
-    // them would make the second one unrefusable in practice.
-    await setConsent.mutateAsync({ kind: 'processing', granted: true })
-    await setConsent.mutateAsync({ kind: 'cross_border_transfer', granted: transfer })
-    await saveProfile.mutateAsync({
-      age: draft.age, sex: draft.sex, heightCm: draft.heightCm, weightKg: draft.weightKg,
-      goal: draft.goal, activity: draft.activity, daysPerWeek: draft.daysPerWeek,
-      equipment: draft.equipment, injuries: draft.injuries, allergies: draft.allergies,
-      // The generator writes the plan in this language; hard-coding 'ar' gave
-      // English speakers a plan in Gulf Arabic.
-      dietary: draft.dietary, locale,
-    })
-    router.replace('/(onboarding)/generating')
+    if (unanswered || submitting.current) return
+    submitting.current = true
+    setBusy(true)
+    try {
+      // Two separate records, because they are two separate permissions.
+      // Bundling them would make the second one unrefusable in practice.
+      await setConsent.mutateAsync({ kind: 'processing', granted: true })
+      await setConsent.mutateAsync({ kind: 'cross_border_transfer', granted: transfer })
+      await saveProfile.mutateAsync({
+        age: draft.age, sex: draft.sex, heightCm: draft.heightCm, weightKg: draft.weightKg,
+        goal: draft.goal, activity: draft.activity, daysPerWeek: draft.daysPerWeek,
+        equipment: draft.equipment, injuries: draft.injuries, allergies: draft.allergies,
+        // The generator writes the plan in this language; hard-coding 'ar' gave
+        // English speakers a plan in Gulf Arabic.
+        dietary: draft.dietary, locale,
+      })
+      router.replace('/(onboarding)/generating')
+    } finally {
+      submitting.current = false
+      setBusy(false)
+    }
   }
 
   return (
@@ -56,7 +67,7 @@ export default function ConsentStep() {
         <Button
           label={t('consent.accept')}
           disabled={!processing || unanswered}
-          loading={saveProfile.isPending}
+          loading={busy}
           onPress={accept}
         />
       }
