@@ -2,7 +2,7 @@ import { router } from 'expo-router'
 import { StepProgress } from '../../components/StepProgress'
 import { Body, Button, Caption, Choice, Screen, Section, Title } from '../../components/ui'
 import { useT } from '../../lib/i18n/useT'
-import { ALLERGENS, DIETS, useOnboarding } from '../../lib/store/onboarding'
+import { ALLERGENS, DIETS, noneDeclared, useOnboarding } from '../../lib/store/onboarding'
 
 const DIET_KEY: Record<string, string> = {
   vegetarian: 'Vegetarian', vegan: 'Vegan', no_red_meat: 'NoRedMeat', low_carb: 'LowCarb', diabetic: 'Diabetic',
@@ -10,7 +10,8 @@ const DIET_KEY: Record<string, string> = {
 
 export default function AllergiesStep() {
   const { t } = useT()
-  const { allergies, dietary, toggle, answered, declareNone } = useOnboarding()
+  const draft = useOnboarding()
+  const { allergies, dietary, toggle, answered, declareNone } = draft
 
   return (
     <Screen
@@ -31,7 +32,7 @@ export default function AllergiesStep() {
       <Choice
         mode="multi"
         label={t('onboarding.allergiesNone')}
-        selected={answered.allergies && allergies.length === 0}
+        selected={noneDeclared(draft, 'allergies')}
         onPress={() => declareNone('allergies')}
       />
       {ALLERGENS.map((value) => (

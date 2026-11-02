@@ -14,6 +14,12 @@ interface OnboardingState extends Draft {
    * tell "no allergies" from "never asked".
    */
   answered: Record<Declared, boolean>
+  /**
+   * Whether this draft was started on purpose — fresh by reset(), or from a
+   * saved profile by hydrate(). False after a reload, when the draft is only
+   * the defaults and belongs to nobody.
+   */
+  started: boolean
   set: <K extends keyof Draft>(key: K, value: Draft[K]) => void
   toggle: <K extends 'equipment' | 'injuries' | 'allergies' | 'dietary'>(
     key: K,
@@ -54,6 +60,7 @@ const UNANSWERED: Record<Declared, boolean> = { injuries: false, allergies: fals
 export const useOnboarding = create<OnboardingState>((set) => ({
   ...INITIAL,
   answered: UNANSWERED,
+  started: false,
   set: (key, value) => set({ [key]: value } as Partial<OnboardingState>),
   toggle: (key, value) =>
     set((state) => {
@@ -71,10 +78,17 @@ export const useOnboarding = create<OnboardingState>((set) => ({
   hydrate: (profile) => {
     const { locale: _locale, ...draft } = profile
     // A saved profile was answered when it was saved.
-    set({ ...draft, answered: { injuries: true, allergies: true } })
+    set({ ...draft, answered: { injuries: true, allergies: true }, started: true })
   },
-  reset: () => set({ ...INITIAL, answered: UNANSWERED }),
+  reset: () => set({ ...INITIAL, answered: UNANSWERED, started: true }),
 }))
+
+/** An explicit "none" — answered, and empty. */
+export const noneDeclared = (state: OnboardingState, key: Declared) =>
+  state.answered[key] && state[key].length === 0
+
+/** Both safety questions answered: the only draft that may be saved. */
+export const allAnswered = (state: OnboardingState) => state.answered.injuries && state.answered.allergies
 
 export const SEXES: Sex[] = ['m', 'f']
 export const GOALS: Goal[] = ['cut', 'recomp', 'gain', 'strength']

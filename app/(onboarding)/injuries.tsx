@@ -2,11 +2,12 @@ import { router } from 'expo-router'
 import { StepProgress } from '../../components/StepProgress'
 import { Body, Button, Caption, Choice, Screen, Title } from '../../components/ui'
 import { useT } from '../../lib/i18n/useT'
-import { INJURIES, useOnboarding } from '../../lib/store/onboarding'
+import { INJURIES, noneDeclared, useOnboarding } from '../../lib/store/onboarding'
 
 export default function InjuriesStep() {
   const { t } = useT()
-  const { injuries, toggle, answered, declareNone } = useOnboarding()
+  const draft = useOnboarding()
+  const { injuries, toggle, answered, declareNone } = draft
 
   return (
     <Screen
@@ -28,7 +29,7 @@ export default function InjuriesStep() {
       <Choice
         mode="multi"
         label={t('onboarding.injuriesNone')}
-        selected={answered.injuries && injuries.length === 0}
+        selected={noneDeclared(draft, 'injuries')}
         onPress={() => declareNone('injuries')}
       />
       {INJURIES.map((value) => (
