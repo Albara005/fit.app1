@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { type GestureResponderEvent, Text, View } from 'react-native'
 import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg'
 import { makeStyles, useTheme } from '../lib/design/theme'
@@ -9,7 +9,7 @@ import { useT } from '../lib/i18n/useT'
 import { ticks } from '../lib/design/ticks'
 import type { WeightEntry } from '../lib/data/repo'
 import type { TrendLine } from '../lib/types'
-import { Button, Caption, Divider, Row } from './ui'
+import { Button, Caption, Divider, Heading, Row } from './ui'
 
 /** The plot and the date band beneath it are one height, so the axis is never cut off. */
 const PLOT_H = 132
@@ -42,31 +42,90 @@ export function TrendChart({ readings, line }: { readings: readonly WeightEntry[
   const [active, setActive] = useState<number | null>(null)
   const [table, setTable] = useState(false)
 
-  if (!line || readings.length < 2) return null
-
   const n = readings.length
-  const values = readings.map((r) => r.weightKg)
-  const yTicks = ticks(Math.min(...values, line.from.kg, line.to.kg), Math.max(...values, line.from.kg, line.to.kg))
-  const yMin = yTicks[0]!
-  const yMax = yTicks[yTicks.length - 1]!
-
   const plotW = Math.max(0, width - GUTTER - PAD * 2)
-  // Laid out left-to-right, then mirrored as a whole in Arabic.
-  const xLtr = (at: number) => GUTTER + PAD + (n === 1 ? plotW / 2 : (at / (n - 1)) * plotW)
-  const x = (at: number) => (rtl ? width - xLtr(at) : xLtr(at))
+  // Laid out left to right, then mirrored as a whole in Arabic. Mirroring is
+  // its own inverse, so the same function maps a touch back into the layout.
+  const mirror = (ltrX: number) => (rtl ? width - ltrX : ltrX)
+  const x = (at: number) => mirror(GUTTER + PAD + (at / (n - 1)) * plotW)
+  const values = readings.map((r) => r.weightKg)
+  const yTicks = line ? ticks(Math.min(...values, line.from.kg, line.to.kg), Math.max(...values, line.from.kg, line.to.kg)) : []
+  const yMin = yTicks[0] ?? 0
+  const yMax = yTicks[yTicks.length - 1] ?? 1
   const y = (v: number) => PAD + (1 - (v - yMin) / (yMax - yMin)) * (PLOT_H - PAD * 2)
-  // Centred in the gutter. SVG's start/end anchors follow the text direction —
-  // under dir="rtl" a start-anchored label grew into the plot — and native SVG
-  // does not inherit that direction at all. Middle means the same everywhere.
-  const tickX = rtl ? width - GUTTER / 2 : GUTTER / 2
+
+  // Everything but the crosshair. A drag re-renders at pointer rate, and only
+  // the crosshair moves.
+  const still = useMemo(() => {
+    if (!line || n < 2 || width === 0) return null
+    const label = { fontSize: 11, fontFamily: type.caption.fontFamily, fill: p.textMuted, textAnchor: 'middle' as const }
+    return (
+      <>
+        {/* Recessive: hairline, solid, one step off the surface. */}
+        {yTicks.map((v) => (
+          <Line key={`g${v}`} x1={mirror(GUTTER)} x2={mirror(width)} y1={y(v)} y2={y(v)} stroke={p.line} strokeWidth={1} />
+        ))}
+        {/* Centred in the gutter. SVG's start/end anchors follow the text
+            direction — under dir="rtl" a start-anchored label grew into the
+            plot — and native SVG does not inherit that direction at all.
+            Middle means the same everywhere. */}
+        {yTicks.map((v) => (
+          <SvgText key={`t${v}`} x={mirror(GUTTER / 2)} y={y(v) + 4} {...label}>
+            {kg(v)}
+          </SvgText>
+        ))}
+        {/* Context first, so the line the coach reads is drawn over it. A
+            surface-coloured ring keeps each dot readable where it meets the line. */}
+        {values.map((v, i) => (
+          <Circle key={`p${i}`} cx={x(i)} cy={y(v)} r={4} fill={p.dataContext} stroke={p.surface} strokeWidth={2} />
+        ))}
+        <Line
+          x1={x(line.from.at)}
+          y1={y(line.from.kg)}
+          x2={x(line.to.at)}
+          y2={y(line.to.kg)}
+          stroke={p.dataEmphasis}
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
+        <Circle cx={x(line.to.at)} cy={y(line.to.kg)} r={4} fill={p.dataEmphasis} stroke={p.surface} strokeWidth={2} />
+        {/* Dates at the two ends only; the table has the rest. */}
+        <SvgText x={x(0)} y={PLOT_H + 14} {...label}>
+          {shortDate(readings[0]!.day)}
+        </SvgText>
+        <SvgText x={x(n - 1)} y={PLOT_H + 14} {...label}>
+          {shortDate(readings[n - 1]!.day)}
+        </SvgText>
+      </>
+    )
+    // x, y and mirror are derived from exactly these.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readings, line, width, rtl, p])
+
+  const rows = useMemo(
+    () =>
+      readings.map((r, i) => (
+        <View key={r.day}>
+          {i > 0 ? <Divider /> : null}
+          <Row style={s.tableRow}>
+            <Text style={[s.cell, s.grow]}>{shortDate(r.day)}</Text>
+            <Text style={s.cell}>
+              {kg(r.weightKg)} {t('common.kg')}
+            </Text>
+          </Row>
+        </View>
+      )),
+    [readings, s, t],
+  )
+
+  if (!line || n < 2) return null
 
   const shown = active ?? n - 1
   const reading = readings[shown]!
 
   const pick = (e: GestureResponderEvent) => {
     if (plotW <= 0) return
-    const px = rtl ? width - e.nativeEvent.locationX : e.nativeEvent.locationX
-    const i = Math.round(((px - GUTTER - PAD) / plotW) * (n - 1))
+    const i = Math.round(((mirror(e.nativeEvent.locationX) - GUTTER - PAD) / plotW) * (n - 1))
     setActive(Math.min(n - 1, Math.max(0, i)))
   }
 
@@ -75,9 +134,7 @@ export function TrendChart({ readings, line }: { readings: readonly WeightEntry[
 
   return (
     <View style={s.wrap}>
-      <Text accessibilityRole="header" style={s.title}>
-        {t('chart.title')}
-      </Text>
+      <Heading>{t('chart.title')}</Heading>
 
       {/* Two layers, so a legend — each key drawn like its mark. */}
       <Row style={s.legend}>
@@ -110,54 +167,13 @@ export function TrendChart({ readings, line }: { readings: readonly WeightEntry[
       >
         {width > 0 ? (
           <Svg width={width} height={PLOT_H + AXIS_H}>
-            {/* Recessive: hairline, solid, one step off the surface. */}
-            {yTicks.map((v) => (
-              <Line key={`g${v}`} x1={x(0) - (rtl ? -PAD : PAD)} x2={x(n - 1) + (rtl ? -PAD : PAD)} y1={y(v)} y2={y(v)} stroke={p.line} strokeWidth={1} />
-            ))}
-            {yTicks.map((v) => (
-              <SvgText
-                key={`t${v}`}
-                x={tickX}
-                y={y(v) + 4}
-                fontSize={11}
-                fontFamily={type.caption.fontFamily}
-                fill={p.textMuted}
-                textAnchor="middle"
-              >
-                {kg(v)}
-              </SvgText>
-            ))}
-
             {active !== null ? (
               <Line x1={x(active)} x2={x(active)} y1={PAD / 2} y2={PLOT_H - PAD / 2} stroke={p.lineStrong} strokeWidth={1} />
             ) : null}
-
-            {/* Context first, so the line the coach reads is drawn over it. A
-                surface-coloured ring keeps each dot readable where it meets the line. */}
-            {values.map((v, i) => (
-              <Circle key={`p${i}`} cx={x(i)} cy={y(v)} r={4} fill={p.dataContext} stroke={p.surface} strokeWidth={2} />
-            ))}
-            <Line
-              x1={x(line.from.at)}
-              y1={y(line.from.kg)}
-              x2={x(line.to.at)}
-              y2={y(line.to.kg)}
-              stroke={p.dataEmphasis}
-              strokeWidth={2}
-              strokeLinecap="round"
-            />
-            <Circle cx={x(line.to.at)} cy={y(line.to.kg)} r={4} fill={p.dataEmphasis} stroke={p.surface} strokeWidth={2} />
+            {still}
             {active !== null ? (
               <Circle cx={x(active)} cy={y(values[active]!)} r={5} fill={p.text} stroke={p.surface} strokeWidth={2} />
             ) : null}
-
-            {/* Dates at the two ends only; the table has the rest. */}
-            <SvgText x={x(0)} y={PLOT_H + 14} fontSize={11} fontFamily={type.caption.fontFamily} fill={p.textMuted} textAnchor="middle">
-              {shortDate(readings[0]!.day)}
-            </SvgText>
-            <SvgText x={x(n - 1)} y={PLOT_H + 14} fontSize={11} fontFamily={type.caption.fontFamily} fill={p.textMuted} textAnchor="middle">
-              {shortDate(readings[n - 1]!.day)}
-            </SvgText>
           </Svg>
         ) : null}
       </View>
@@ -173,17 +189,7 @@ export function TrendChart({ readings, line }: { readings: readonly WeightEntry[
             </Caption>
             <Caption strong>{t('onboarding.weight')}</Caption>
           </Row>
-          {readings.map((r, i) => (
-            <View key={r.day}>
-              {i > 0 ? <Divider /> : null}
-              <Row style={s.tableRow}>
-                <Text style={[s.cell, s.grow]}>{shortDate(r.day)}</Text>
-                <Text style={s.cell}>
-                  {kg(r.weightKg)} {t('common.kg')}
-                </Text>
-              </Row>
-            </View>
-          ))}
+          {rows}
         </View>
       ) : null}
     </View>
@@ -192,7 +198,6 @@ export function TrendChart({ readings, line }: { readings: readonly WeightEntry[
 
 const useStyles = makeStyles((p) => ({
   wrap: { gap: space.sm },
-  title: { ...type.heading, color: p.text },
   legend: { gap: space.lg },
   key: { gap: space.xs },
   dotKey: { width: 8, height: 8, borderRadius: 4 },
