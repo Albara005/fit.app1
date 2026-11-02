@@ -32,7 +32,6 @@ const PAIRS: readonly [fg: Role, bg: Role, min: number][] = [
   ['text', 'surface', TEXT],
   ['text', 'surfaceRaised', TEXT],
   ['text', 'accentSoft', TEXT],
-  ['text', 'okSoft', TEXT],
   ['text', 'warnSoft', TEXT],
   ['text', 'dangerSoft', TEXT],
 
@@ -46,10 +45,7 @@ const PAIRS: readonly [fg: Role, bg: Role, min: number][] = [
   ['accent', 'accentSoft', TEXT],
 
   ['onPrimary', 'primary', TEXT],
-  ['onAccentFill', 'accentFill', TEXT],
 
-  ['ok', 'surface', TEXT],
-  ['ok', 'okSoft', TEXT],
   ['warn', 'surface', TEXT],
   ['warn', 'warnSoft', TEXT],
   ['danger', 'surface', TEXT],

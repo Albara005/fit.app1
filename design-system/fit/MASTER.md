@@ -36,10 +36,10 @@ Semantic roles only; screens never name a hex value. Both themes define the same
 | `lineStrong` | `#5A7F5C` | `#6E7C69` | A control's own edge — ≥ 3:1 |
 | `primary` / `onPrimary` | lime / ink | deep green / white | |
 | `accent` | `#B7E01E` | `#4F690D` | Lime **as text**. Pure lime on white is 1.53:1, so light mode uses an ink. |
-| `accentFill` / `onAccentFill` | lime / ink | lime / ink | Lime **as a fill** — always with dark ink on it |
+| `accentFill` | lime | lime | Lime **as a fill** (the mark's "P") — never under text in light mode |
 | `accentSoft` | `#1F2E12` | `#EFF6D8` | The coach card's ground |
 | `focus` | lime | deep green | ≥ 3:1. Lime fails as a ring on white. |
-| `ok` / `warn` / `danger` (+ `Soft`) | | | ≥ 4.5:1 on surface and on their own tint |
+| `warn` / `danger` (+ `Soft`) | | | ≥ 4.5:1 on surface and on their own tint |
 
 `tests/contrast.test.ts` asserts every pairing a component draws, in both themes. **When a component starts drawing a new pairing, add it there first.**
 
@@ -81,14 +81,14 @@ Theme follows the system by default; the user can pin light or dark in the profi
 
 ## Motion
 
-Subtle (dial 3/10). `press 120ms · state 200ms · screen 280ms`; exits run at 70% of entry. Opacity and colour only — never animate layout bounds. With reduced motion on, state changes are immediate.
+Subtle (dial 3/10). Today the only motion is the navigator's own transition and a pressed control dropping to 80% opacity — one value for every control. If more is added: opacity and colour only, never layout bounds; `press 120ms · state 200ms · screen 280ms`, exits at 70% of entry; immediate under reduced motion.
 
 ## Components
 
 | Component | Contract |
 |---|---|
 | `Screen` | Safe areas, scroll, optional fixed footer; content never sits under the footer |
-| `Button` | `primary` · `secondary` · `quiet` · `danger`. ≥ 48 high. Pressed = opacity, never a size change |
+| `Button` | `primary` · `secondary` · `quiet` · `danger`. ≥ 48 high. Pressed = opacity, never a size change. An async `onPress` runs once at a time, with the spinner up until it settles — screens never guard their own submits |
 | `CoachLine` | The one sentence explaining today's change. The only `accentSoft` surface on a screen |
 | `Choice` | Single/multi select row, announced as radio or checkbox. Boundary is `lineStrong`; selection is shown by fill *and* a check mark, not colour alone |
 | `Segmented` | 2–4 short exclusive options on one line (language, theme, cook method) |
@@ -122,7 +122,7 @@ Standalone values (`Stat`) use proportional figures (`figure`); tabular figures 
 
 State goes in `aria-*` props — `aria-checked`, `aria-disabled`, `aria-busy`, `aria-valuenow`, `aria-hidden` — never `accessibilityState` / `accessibilityValue`. React Native accepts both on iOS and Android, but react-native-web 0.21 reads only `aria-*`: with `accessibilityState` every selected option reached a browser screen reader as unselected. Native-only hiding props (`accessibilityElementsHidden`, `importantForAccessibility`) do nothing on the web either; use `aria-hidden`.
 
-A field's hint or error is tied to its input with `aria-describedby` (react-native-web drops `accessibilityHint`).
+A field's hint or error is tied to its input with `aria-describedby` (react-native-web drops `accessibilityHint`). A button's hint and a switch's detail are folded into the control's name instead: react-native-web puts `aria-describedby` on the switch's wrapper, not the switch.
 
 ## Anti-patterns
 

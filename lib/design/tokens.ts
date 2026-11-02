@@ -27,16 +27,13 @@ export interface Palette {
 
   /** The brand lime where it is read as text or an icon stroke. */
   accent: string
-  /** The brand lime as a fill. In light mode lime is a fill only: as text on white it is 1.5:1. */
+  /** The brand lime as a fill (the mark's "P"). In light mode lime is a fill only: as text on white it is 1.5:1. */
   accentFill: string
-  onAccentFill: string
   /** Tinted ground for the coach's line — the one place the screen speaks. */
   accentSoft: string
 
   focus: string
 
-  ok: string
-  okSoft: string
   warn: string
   warnSoft: string
   danger: string
@@ -52,8 +49,6 @@ export interface Palette {
    */
   dataEmphasis: string
   dataContext: string
-
-  scrim: string
 }
 
 export const palettes: Record<ThemeName, Palette> = {
@@ -69,11 +64,8 @@ export const palettes: Record<ThemeName, Palette> = {
     onPrimary: '#0B140C',
     accent: '#B7E01E',
     accentFill: '#B7E01E',
-    onAccentFill: '#0B140C',
     accentSoft: '#1F2E12',
     focus: '#B7E01E',
-    ok: '#5BC47F',
-    okSoft: '#12291A',
     warn: '#E0A93D',
     warnSoft: '#2A2110',
     danger: '#E5614A',
@@ -81,7 +73,6 @@ export const palettes: Record<ThemeName, Palette> = {
     sand: '#E9CCA6',
     dataEmphasis: '#B7E01E',
     dataContext: '#5A7F5C',
-    scrim: 'rgba(0, 0, 0, 0.6)',
   },
   light: {
     bg: '#F7F9F4',
@@ -97,11 +88,8 @@ export const palettes: Record<ThemeName, Palette> = {
     onPrimary: '#FFFFFF',
     accent: '#4F690D',
     accentFill: '#B7E01E',
-    onAccentFill: '#0B140C',
     accentSoft: '#EFF6D8',
     focus: '#1F4024',
-    ok: '#1A7343',
-    okSoft: '#E3F1E8',
     warn: '#8A5A00',
     warnSoft: '#FAEFD9',
     danger: '#B4301C',
@@ -109,7 +97,6 @@ export const palettes: Record<ThemeName, Palette> = {
     sand: '#7A5A2E',
     dataEmphasis: '#4F690D',
     dataContext: '#8C9887',
-    scrim: 'rgba(11, 20, 12, 0.45)',
   },
 }
 
@@ -168,12 +155,4 @@ export const layout = {
   /** Past this width a single column of Arabic text stops being comfortable to read. */
   maxContent: 560,
   wideBreakpoint: 600,
-} as const
-
-/** Exit runs at 70% of entry: leaving should never feel slower than arriving. */
-export const motion = {
-  press: 120,
-  state: 200,
-  screen: 280,
-  exitFactor: 0.7,
 } as const
