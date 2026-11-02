@@ -1,8 +1,15 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const sql = readFileSync(resolve(__dirname, '../supabase/migrations/0001_init.sql'), 'utf8')
+const dir = resolve(__dirname, '../supabase/migrations')
+const sql = readFileSync(resolve(dir, '0001_init.sql'), 'utf8')
+/** Every migration in order: what a fresh project ends up with. */
+const all = readdirSync(dir)
+  .filter((f) => f.endsWith('.sql'))
+  .sort()
+  .map((f) => readFileSync(resolve(dir, f), 'utf8'))
+  .join('\n')
 
 const tables = [...sql.matchAll(/create table public\.(\w+)/g)].map((m) => m[1]!)
 const rlsEnabled = new Set(
@@ -68,7 +75,6 @@ describe('the security-definer functions', () => {
 
   it('grants delete_all_my_data to users and the quota check to the server only', () => {
     expect(sql).toContain('grant execute on function public.delete_all_my_data() to authenticated')
-    // Revoking from PUBLIC also drops what service_role inherits through it.
     expect(sql).toContain(
       'grant execute on function public.consume_quota(uuid, text, integer) to service_role',
     )
@@ -80,6 +86,34 @@ describe('the security-definer functions', () => {
     for (const table of tables) {
       expect(body, `delete_all_my_data leaves ${table} behind`).toContain(`delete from public.${table}`)
     }
+  })
+})
+
+describe('nothing callable with the anon key alone', () => {
+  // Supabase grants EXECUTE on new functions in public directly to anon and
+  // authenticated, so revoking from PUBLIC is not enough: a definer function
+  // stays callable by anyone holding the key the app ships with. The live
+  // project's security advisor found exactly that.
+  // Header only — returns, language, security — so one function's scan cannot
+  // run on into the next one's body.
+  const definers = [...all.matchAll(/function public\.(\w+)\([^)]*\)\s+returns\s+\w+\s+language\s+\w+\s+security definer/g)].map(
+    (m) => m[1]!,
+  )
+
+  it('found the definer functions', () => {
+    expect(definers.sort()).toEqual(['consume_quota', 'delete_all_my_data'])
+  })
+
+  it.each(['consume_quota', 'delete_all_my_data'])('revokes %s from anon explicitly', (name) => {
+    expect(all).toMatch(new RegExp(`revoke execute on function public\\.${name}\\([^)]*\\) from anon\\b`))
+  })
+
+  it('keeps the quota, which takes any user id, from signed-in users too', () => {
+    expect(all).toMatch(/revoke execute on function public\.consume_quota\([^)]*\) from anon, authenticated/)
+  })
+
+  it('pins the trigger function\'s search_path', () => {
+    expect(all).toContain("alter function public.touch_updated_at() set search_path = ''")
   })
 })
 
