@@ -38,7 +38,20 @@ export function translate(
     if (__DEV__) console.warn(`[i18n] missing key: ${key}`)
     return key
   }
-  return interpolate(text, params)
+  const out = interpolate(text, params)
+  return locale === 'ar' ? isolateRanges(out) : out
+}
+
+/**
+ * An en dash does not hold two numbers in one run under the bidi algorithm, so
+ * inside Arabic "كل 6–8 أسابيع" drew its range as 8–6. Every Arabic string gets
+ * its numeric ranges isolated here, once, rather than each string — or each
+ * future one — remembering to. A range already isolated is left alone.
+ */
+const RANGE = /(?<![\u2066\d.])\d+(?:\.\d+)?–\d+(?:\.\d+)?(?![\d.])/g
+
+export function isolateRanges(text: string): string {
+  return text.replace(RANGE, (range) => ltr(range))
 }
 
 export function makeT(locale: Locale) {

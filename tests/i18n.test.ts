@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import ar from '../locales/ar.json'
 import en from '../locales/en.json'
-import { isRtl, ltr, makeT, translate } from '../lib/i18n'
+import { isRtl, ltr, makeT, translate, isolateRanges } from '../lib/i18n'
 
 type Node = Record<string, unknown>
 const flatten = (node: Node, prefix = ''): string[] =>
@@ -90,5 +90,27 @@ describe('bidi isolation', () => {
 
   it('leaves the visible characters untouched', () => {
     expect(ltr('-3.85').replace(/[⁦⁩]/g, '')).toBe('-3.85')
+  })
+})
+
+describe('Arabic numeric ranges', () => {
+  // An en dash does not hold two numbers in one run under the bidi algorithm:
+  // unisolated, "كل 6–8 أسابيع" drew its range as 8–6.
+  it('are isolated inside Arabic text', () => {
+    expect(isolateRanges('كل 6–8 أسابيع')).toBe('كل \u20666–8\u2069 أسابيع')
+    expect(isolateRanges('1.5–2.5 كجم')).toBe('\u20661.5–2.5\u2069 كجم')
+  })
+
+  it('are not isolated twice', () => {
+    expect(isolateRanges('\u2066229–274\u2069 سعرة')).toBe('\u2066229–274\u2069 سعرة')
+  })
+
+  it('leave a hyphenated rep range alone: the bidi rules already keep it whole', () => {
+    expect(isolateRanges('3 × 8-10')).toBe('3 × 8-10')
+  })
+
+  it('apply to Arabic copy only', () => {
+    expect(translate('ar', 'onboarding.loopPhaseTime')).toContain('\u20666–8\u2069')
+    expect(translate('en', 'onboarding.loopPhaseTime')).toBe('Every 6–8 weeks')
   })
 })
