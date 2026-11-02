@@ -188,11 +188,12 @@ describe('Arabic number agreement', () => {
 describe('phaseLine', () => {
   const weights = [86, 85.6, 86.1, 85.2, 84.9, 85.0, 84.4, 84.1]
 
-  it('is the comparison the verdict is made on', () => {
-    // A chart of the phase draws this line; it must rise or fall by exactly the
-    // change the verdict reports, or the picture contradicts the decision.
-    const line = phaseLine(weights)!
-    expect(Math.round((line.to.kg - line.from.kg) * 100) / 100).toBe(phaseChangeKg(weights))
+  it('is returned by the review that decided from it', () => {
+    // The chart draws review.line; it must move by exactly the change the
+    // verdict reports, or the picture contradicts the decision.
+    const r = reviewPhase(input({ weightsKg: weights }))
+    expect(r.line).toEqual(phaseLine(weights))
+    expect(Math.round((r.line!.to.kg - r.line!.from.kg) * 100) / 100).toBe(r.totalChangeKg)
   })
 
   it('places each end at the centre of its window', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { reviewWeek, trendFit, weeklyLine, weightTrend, type WeekLog } from '../../lib/plan/weekly'
+import { reviewWeek, weeklyLine, weightTrend, type WeekLog } from '../../lib/plan/weekly'
 import { gate } from '../../lib/safety/gate'
 import { makeProfile } from '../factories'
 
@@ -32,34 +32,24 @@ describe('weightTrend', () => {
   })
 })
 
-describe('trendFit', () => {
-  it('needs three readings, as the review does', () => {
-    expect(trendFit([80, 79.8])).toBeNull()
-  })
-
-  it('passes through a perfectly straight series', () => {
-    const fit = trendFit([80, 79.8, 79.6, 79.4])!
-    expect(fit.intercept).toBeCloseTo(80, 10)
-    expect(fit.slope).toBeCloseTo(-0.2, 10)
-  })
-
-  it('is the line weightTrend reads: its rise across the span is the trend', () => {
-    // The chart draws trendFit; the review decides from weightTrend. If these
-    // ever disagree, the chart explains a decision the coach did not make.
-    const readings = [85, 84.6, 84.9, 84.3, 84.4, 84.0]
-    const fit = trendFit(readings)!
-    const across = fit.slope * (readings.length - 1)
-    expect(across).toBeCloseTo(weightTrend(readings)!, 10)
-  })
-})
-
 describe('weeklyLine', () => {
-  it('spans the readings and rises by exactly the trend the review acts on', () => {
-    const readings = [85, 84.6, 84.9, 84.3, 84.4, 84.0]
-    const line = weeklyLine(readings)!
-    expect(line.from.at).toBe(0)
-    expect(line.to.at).toBe(readings.length - 1)
-    expect(line.to.kg - line.from.kg).toBeCloseTo(weightTrend(readings)!, 10)
+  it('needs three readings, as the review does', () => {
+    expect(weeklyLine([80, 79.8])).toBeNull()
+  })
+
+  it('passes exactly through a straight series, end to end', () => {
+    const line = weeklyLine([80, 79.8, 79.6, 79.4])!
+    expect(line.from).toEqual({ at: 0, kg: expect.closeTo(80, 10) })
+    expect(line.to).toEqual({ at: 3, kg: expect.closeTo(79.4, 10) })
+  })
+
+  it('is returned by the review that decided from it', () => {
+    // The chart draws review.line. If the review ever decides on something
+    // else, this is where the two would part.
+    const weightsKg = [85, 84.6, 84.9, 84.3, 84.4, 84.0]
+    const r = reviewWeek(makeProfile(), log({ weightsKg }))
+    expect(r.line).toEqual(weeklyLine(weightsKg))
+    expect(r.line!.to.kg - r.line!.from.kg).toBeCloseTo(r.weeklyChangeKg!, 10)
   })
 })
 

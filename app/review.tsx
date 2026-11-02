@@ -12,7 +12,6 @@ import { today } from '../lib/data/repo'
 import { space } from '../lib/design/tokens'
 import { ltr } from '../lib/i18n'
 import { useT } from '../lib/i18n/useT'
-import { weeklyLine } from '../lib/plan/weekly'
 
 /**
  * Loop two, in two minutes: one number in, then what happened, what changed,
@@ -65,8 +64,6 @@ export default function Review() {
   }
 
   const data = review.data
-  // Drawn from the readings this review was computed from, not a second fetch.
-  const trend = data ? weeklyLine(data.readings.map((w) => w.weightKg)) : null
 
   return (
     <Screen
@@ -106,9 +103,10 @@ export default function Review() {
             <Meter value={data.adherence} max={1} label={t('review.adherence')} />
           </Card>
 
-          {trend ? (
+          {/* The review's own line over the review's own readings: never refitted here. */}
+          {data.line ? (
             <Card>
-              <TrendChart readings={data.readings} line={trend} />
+              <TrendChart readings={data.readings} line={data.line} />
             </Card>
           ) : null}
 

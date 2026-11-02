@@ -10,7 +10,7 @@ import { makeStyles } from '../lib/design/theme'
 import { space } from '../lib/design/tokens'
 import { type } from '../lib/design/typography'
 import { useT } from '../lib/i18n/useT'
-import { phaseLine, reportValue, shareText } from '../lib/plan/phase'
+import { reportValue, shareText } from '../lib/plan/phase'
 import { shareOrCopy, type ShareOutcome } from '../lib/share'
 
 const GOAL_KEY: Record<string, string> = {
@@ -54,8 +54,6 @@ export default function Phase() {
   }
 
   const suggested = data.suggestedGoal
-  // Drawn from the readings the verdict was made on, not a second fetch.
-  const trend = phaseLine(data.readings.map((w) => w.weightKg))
   const text = shareText(data, locale)
 
   async function apply() {
@@ -94,9 +92,10 @@ export default function Phase() {
       <Title>{data.headline[locale]}</Title>
       <CoachLine>{data.detail[locale]}</CoachLine>
 
-      {trend ? (
+      {/* The verdict's own line over the verdict's own readings: never refitted here. */}
+      {data.line ? (
         <Card>
-          <TrendChart readings={data.readings} line={trend} />
+          <TrendChart readings={data.readings} line={data.line} />
         </Card>
       ) : null}
 

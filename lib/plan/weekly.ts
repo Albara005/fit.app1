@@ -1,17 +1,7 @@
+import { AR_COUNT, countAr, countEn } from '../i18n'
 import { KCAL_FLOOR, MAX_DEFICIT_FRACTION } from '../safety/gate'
 import type { CheckIn, DerivedProfile, NutritionTarget, Plan, TrendLine } from '../types'
 import { buildTemplatePlan } from './engine'
-
-/**
- * Arabic does not count as "N + plural": one and two have forms of their own,
- * and "2 أيام" reads as a mistake — in the very case low adherence produces,
- * a three-day week cut to two. Three to ten take the plural.
- */
-function daysAr(n: number): string {
-  if (n === 1) return 'يوم واحد'
-  if (n === 2) return 'يومين'
-  return `${n} أيام`
-}
 
 export interface WeekLog {
   weekIndex: number
@@ -40,17 +30,19 @@ export interface WeeklyReview {
   codes: ReviewCode[]
   adherence: number
   weeklyChangeKg: number | null
+  /** The line the review decided from — what a chart of this review draws. */
+  line: TrendLine | null
   nextProfile: DerivedProfile
   nextPlan: Plan
   cards: ReviewCard[]
 }
 
 /**
- * The least-squares line through the readings, by reading order. Exported so
- * the chart draws the very line this review decides from — a chart fitted
- * separately could show a trend the coach did not act on.
+ * The weekly review's line: the least-squares fit through the readings, by
+ * reading order. reviewWeek returns it, so a chart draws the very line the
+ * review decided from rather than a fit of its own.
  */
-export function trendFit(weights: readonly number[]): { intercept: number; slope: number } | null {
+export function weeklyLine(weights: readonly number[]): TrendLine | null {
   if (weights.length < 3) return null
   const n = weights.length
   const meanX = (n - 1) / 2
@@ -63,15 +55,8 @@ export function trendFit(weights: readonly number[]): { intercept: number; slope
   }
   if (den === 0) return null
   const slope = num / den
-  return { intercept: meanY - slope * meanX, slope }
-}
-
-/** The weekly review's line: the least-squares fit, across the readings it saw. */
-export function weeklyLine(weights: readonly number[]): TrendLine | null {
-  const fit = trendFit(weights)
-  if (fit === null) return null
-  const last = weights.length - 1
-  return { from: { at: 0, kg: fit.intercept }, to: { at: last, kg: fit.intercept + fit.slope * last } }
+  const intercept = meanY - slope * meanX
+  return { from: { at: 0, kg: intercept }, to: { at: n - 1, kg: intercept + slope * (n - 1) } }
 }
 
 /**
@@ -110,7 +95,8 @@ function adjustNutrition(
 export function reviewWeek(profile: DerivedProfile, log: WeekLog): WeeklyReview {
   const codes: ReviewCode[] = []
   const adherence = log.sessionsPlanned > 0 ? log.sessionsCompleted / log.sessionsPlanned : 0
-  const trend = weightTrend(log.weightsKg)
+  const line = weeklyLine(log.weightsKg)
+  const trend = line === null ? null : line.to.kg - line.from.kg
   const next = { ...profile }
 
   if (adherence < 0.5) {
@@ -146,6 +132,7 @@ export function reviewWeek(profile: DerivedProfile, log: WeekLog): WeeklyReview 
     codes,
     adherence,
     weeklyChangeKg: trend,
+    line,
     nextProfile: next,
     nextPlan: plan,
     cards: buildCards(codes, adherence, trend, next, plan),
@@ -192,8 +179,8 @@ function buildCards(
     ? {
         // Kept free of its own numbers: the sentence before it already names
         // the real one, and an invented "four beats six" contradicts it.
-        ar: `نزّلت الأسبوع إلى ${daysAr(profile.daysPerWeek)}. يوم تكمله أفضل من يومين تفوّتهما.`,
-        en: `I cut the week to ${profile.daysPerWeek} ${profile.daysPerWeek === 1 ? 'day' : 'days'}. Days you finish beat days you skip.`,
+        ar: `نزّلت الأسبوع إلى ${countAr(profile.daysPerWeek, AR_COUNT.days)}. يوم تكمله أفضل من يومين تفوّتهما.`,
+        en: `I cut the week to ${countEn(profile.daysPerWeek, 'day', 'days')}. Days you finish beat days you skip.`,
       }
     : codes.includes('STALLED')
       ? {

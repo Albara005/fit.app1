@@ -1,4 +1,4 @@
-import { ltr, translate } from '../i18n'
+import { AR_COUNT, countAr, ltr, translate } from '../i18n'
 import type { CheckIn, DerivedProfile, Goal, Locale, TrendLine } from '../types'
 import { bmi } from './nutrition'
 
@@ -43,6 +43,8 @@ export interface PhaseReview {
   weeks: number
   adherence: number
   totalChangeKg: number | null
+  /** The comparison the verdict was made on — what a chart of this review draws. */
+  line: TrendLine | null
   /** Set only when the decision is CHANGE_GOAL or MAINTAIN_BREAK. */
   suggestedGoal: Goal | null
   headline: { ar: string; en: string }
@@ -94,7 +96,8 @@ export function reviewPhase(input: PhaseInput): PhaseReview {
   const weeks = sessionsPerWeek.length
   const planned = plannedPerWeek * weeks
   const adherence = planned > 0 ? Math.min(1, sessionsPerWeek.reduce((a, b) => a + b, 0) / planned) : 0
-  const totalChangeKg = phaseChangeKg(weightsKg)
+  const line = phaseLine(weightsKg)
+  const totalChangeKg = line === null ? null : round(line.to.kg - line.from.kg, 2)
   const currentWeightKg = weightsKg.at(-1) ?? profile.weightKg
   const startWeightKg = weightsKg[0] ?? profile.weightKg
   const currentBmi = bmi(currentWeightKg, profile.heightCm)
@@ -146,6 +149,7 @@ export function reviewPhase(input: PhaseInput): PhaseReview {
     weeks,
     adherence,
     totalChangeKg,
+    line,
     suggestedGoal,
     headline,
     detail,
@@ -175,7 +179,7 @@ export function reviewPhase(input: PhaseInput): PhaseReview {
         'recomp',
         { ar: 'وقت نوقف التنشيف', en: 'Time to stop cutting' },
         {
-          ar: `نزلت ${Math.abs(totalChangeKg)} كجم في ${weeks} أسابيع. الجسم يحتاج فترة تثبيت قبل أي تنشيف جديد — هذي مو خطوة للخلف، هذي اللي تخلّي النتيجة تثبت.`,
+          ar: `نزلت ${Math.abs(totalChangeKg)} كجم في ${countAr(weeks, AR_COUNT.weeks)}. الجسم يحتاج فترة تثبيت قبل أي تنشيف جديد — هذي مو خطوة للخلف، هذي اللي تخلّي النتيجة تثبت.`,
           en: `Down ${Math.abs(totalChangeKg)} kg over ${weeks} weeks. Your body needs a maintenance block before another deficit — this is not a step back, it is what makes the result hold.`,
         },
       )
@@ -206,11 +210,11 @@ export function reviewPhase(input: PhaseInput): PhaseReview {
       ar:
         totalChangeKg === null
           ? `كمّلت ${Math.round(adherence * 100)}% من تمارين المرحلة. الالتزام ممتاز — سجّل وزنك أكثر المرحلة الجاية عشان نقيس الاتجاه.`
-          : `${weeks} أسابيع، التزام ${Math.round(adherence * 100)}%، والوزن ${totalChangeKg < 0 ? 'نزل' : 'زاد'} ${Math.abs(totalChangeKg)} كجم. الاتجاه صحيح ونكمل على نفس الهدف.`,
+          : `${countAr(weeks, AR_COUNT.weeks)}، التزام ${Math.round(adherence * 100)}%، ${totalChangeKg === 0 ? 'والوزن ثابت' : `والوزن ${totalChangeKg < 0 ? 'نزل' : 'زاد'} ${Math.abs(totalChangeKg)} كجم`}. الاتجاه صحيح ونكمل على نفس الهدف.`,
       en:
         totalChangeKg === null
           ? `You completed ${Math.round(adherence * 100)}% of the phase. Strong adherence — weigh in more often next phase so we can read the trend.`
-          : `${weeks} weeks, ${Math.round(adherence * 100)}% adherence, weight ${totalChangeKg < 0 ? 'down' : 'up'} ${Math.abs(totalChangeKg)} kg. The trend is right; the goal stays.`,
+          : `${weeks} weeks, ${Math.round(adherence * 100)}% adherence, ${totalChangeKg === 0 ? 'weight steady' : `weight ${totalChangeKg < 0 ? 'down' : 'up'} ${Math.abs(totalChangeKg)} kg`}. The trend is right; the goal stays.`,
     },
   )
 }
