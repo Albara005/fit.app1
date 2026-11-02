@@ -7,8 +7,13 @@ import { newId, type ConsentKind, type RejectionRecord, type Repo, type SessionL
 
 export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? ''
 export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? ''
-/** Documented in the privacy screen, so it is configuration, not a constant. */
-export const SUPABASE_REGION = process.env.EXPO_PUBLIC_SUPABASE_REGION ?? 'eu-central-1'
+/**
+ * Documented in the privacy screen, so it is configuration, not a constant.
+ * `||`, not `??`, here and for the policy version: a deploy variable created
+ * blank is no setting. Shown blank, the region would tell people their data
+ * lives nowhere; stored blank, a consent record would name no policy at all.
+ */
+export const SUPABASE_REGION = process.env.EXPO_PUBLIC_SUPABASE_REGION || 'eu-central-1'
 
 export function isSupabaseConfigured(): boolean {
   return SUPABASE_URL.length > 0 && SUPABASE_ANON_KEY.length > 0
@@ -111,7 +116,7 @@ export function supabaseRepo(): Repo {
         user_id: await userId(),
         kind,
         granted,
-        policy_version: process.env.EXPO_PUBLIC_POLICY_VERSION ?? '2026-08-01',
+        policy_version: process.env.EXPO_PUBLIC_POLICY_VERSION || '2026-08-01',
       })
     },
 

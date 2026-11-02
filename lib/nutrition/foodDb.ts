@@ -67,7 +67,9 @@ export function parseProduct(payload: unknown): Product | null {
 export async function lookupBarcode(code: string): Promise<Product | null> {
   if (!hasValidCheckDigit(code)) return null
 
-  const base = process.env.EXPO_PUBLIC_FOOD_DB_URL ?? DEFAULT_ENDPOINT
+  // An empty setting is no setting: a deploy variable created blank would
+  // otherwise send every lookup to a relative URL and fail silently.
+  const base = process.env.EXPO_PUBLIC_FOOD_DB_URL || DEFAULT_ENDPOINT
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
 

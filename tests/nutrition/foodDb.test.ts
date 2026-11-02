@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { hasValidCheckDigit, isBarcodeShaped, parseProduct } from '../../lib/nutrition/foodDb'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { hasValidCheckDigit, isBarcodeShaped, lookupBarcode, parseProduct } from '../../lib/nutrition/foodDb'
 
 describe('barcode shape', () => {
   it.each([
@@ -71,5 +71,28 @@ describe('parseProduct', () => {
       payload({ 'energy-kcal_100g': 480, proteins_100g: 7, carbohydrates_100g: 62, fat_100g: 21 }, ''),
     )
     expect(result?.name).toBe('')
+  })
+})
+
+describe('the lookup endpoint', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('treats a blank setting as no setting', async () => {
+    vi.stubEnv('EXPO_PUBLIC_FOOD_DB_URL', '')
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response('{}', { status: 404 }))
+    vi.stubGlobal('fetch', fetch)
+    await lookupBarcode('5449000000996')
+    expect(String(fetch.mock.calls[0]?.[0])).toMatch(/^https:\/\//)
+  })
+
+  it('uses the configured endpoint when there is one', async () => {
+    vi.stubEnv('EXPO_PUBLIC_FOOD_DB_URL', 'https://food.example/api')
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response('{}', { status: 404 }))
+    vi.stubGlobal('fetch', fetch)
+    await lookupBarcode('5449000000996')
+    expect(String(fetch.mock.calls[0]?.[0])).toMatch(/^https:\/\/food\.example\/api\/5449000000996\.json/)
   })
 })
