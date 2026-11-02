@@ -7,10 +7,10 @@ import { space } from '../../lib/theme'
 
 export default function InjuriesStep() {
   const { t } = useT()
-  const { injuries, set, toggle } = useOnboarding()
+  const { injuries, toggle, answered, declareNone } = useOnboarding()
 
   return (
-    <Screen footer={<Button label={t('common.next')} onPress={() => router.push('/(onboarding)/allergies')} />}>
+    <Screen footer={<Button label={t('common.next')} disabled={!answered.injuries} onPress={() => router.push('/(onboarding)/allergies')} />}>
       <Steps current={5} total={8} />
       <Title>{t('onboarding.injuriesTitle')}</Title>
       <Body>{t('onboarding.injuriesBody')}</Body>
@@ -18,8 +18,8 @@ export default function InjuriesStep() {
       <Wrap>
         <Chip
           label={t('onboarding.injuriesNone')}
-          selected={injuries.length === 0}
-          onPress={() => set('injuries', [])}
+          selected={answered.injuries && injuries.length === 0}
+          onPress={() => declareNone('injuries')}
         />
         {INJURIES.map((value) => (
           <Chip

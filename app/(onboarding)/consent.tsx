@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Body, Button, Card, Screen, Small, Spacer, Title } from '../../components/ui'
 import { Steps } from '../../components/Steps'
-import { useSaveProfile, useSetConsent } from '../../lib/data/queries'
+import { useConsents, useSaveProfile, useSetConsent } from '../../lib/data/queries'
 import { useT } from '../../lib/i18n/useT'
 import { useOnboarding } from '../../lib/store/onboarding'
 import { colors, radius, space, type } from '../../lib/theme'
@@ -32,12 +32,17 @@ function Check({
 }
 
 export default function ConsentStep() {
-  const { t } = useT()
+  const { t, locale } = useT()
   const draft = useOnboarding()
+  const { data: saved } = useConsents()
   const saveProfile = useSaveProfile()
   const setConsent = useSetConsent()
-  const [processing, setProcessing] = useState(false)
-  const [transfer, setTransfer] = useState(false)
+  // Untouched means "as saved". Starting both at false meant a returning user
+  // editing their weight silently revoked the transfer consent they had given.
+  const [processingChoice, setProcessing] = useState<boolean | null>(null)
+  const [transferChoice, setTransfer] = useState<boolean | null>(null)
+  const processing = processingChoice ?? saved?.processing ?? false
+  const transfer = transferChoice ?? saved?.cross_border_transfer ?? false
 
   async function accept() {
     // Two separate records, because they are two separate permissions. Bundling
@@ -48,7 +53,9 @@ export default function ConsentStep() {
       age: draft.age, sex: draft.sex, heightCm: draft.heightCm, weightKg: draft.weightKg,
       goal: draft.goal, activity: draft.activity, daysPerWeek: draft.daysPerWeek,
       equipment: draft.equipment, injuries: draft.injuries, allergies: draft.allergies,
-      dietary: draft.dietary, locale: 'ar',
+      // The generator writes the plan in this language; hard-coding 'ar' gave
+      // English speakers a plan in Gulf Arabic.
+      dietary: draft.dietary, locale,
     })
     router.replace('/(onboarding)/generating')
   }

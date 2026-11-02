@@ -4,12 +4,29 @@ import type { ActivityLevel, DietaryId, Equipment, Goal, InjuryId, Profile, Sex 
 
 interface Draft extends Omit<Profile, 'locale'> {}
 
+/** The two questions the safety gate depends on. */
+type Declared = 'injuries' | 'allergies'
+
 interface OnboardingState extends Draft {
+  /**
+   * Whether the person has actually answered. An empty list is not an answer:
+   * it is also what a question nobody looked at contains, and the gate cannot
+   * tell "no allergies" from "never asked".
+   */
+  answered: Record<Declared, boolean>
   set: <K extends keyof Draft>(key: K, value: Draft[K]) => void
   toggle: <K extends 'equipment' | 'injuries' | 'allergies' | 'dietary'>(
     key: K,
     value: Draft[K][number],
   ) => void
+  /** Records an explicit "none". */
+  declareNone: (key: Declared) => void
+  /**
+   * Loads a saved profile so that editing starts from what is true, not from
+   * the defaults. Without it, editing one field after a restart rewrote every
+   * other one — allergies included — with a stranger's.
+   */
+  hydrate: (profile: Profile) => void
   reset: () => void
 }
 
@@ -32,17 +49,31 @@ const INITIAL: Draft = {
   dietary: ['halal'],
 }
 
+const UNANSWERED: Record<Declared, boolean> = { injuries: false, allergies: false }
+
 export const useOnboarding = create<OnboardingState>((set) => ({
   ...INITIAL,
+  answered: UNANSWERED,
   set: (key, value) => set({ [key]: value } as Partial<OnboardingState>),
   toggle: (key, value) =>
     set((state) => {
       const list = state[key] as string[]
-      return {
-        [key]: list.includes(value) ? list.filter((v) => v !== value) : [...list, value],
-      } as Partial<OnboardingState>
+      const next = list.includes(value) ? list.filter((v) => v !== value) : [...list, value]
+      // Picking an item is an answer; un-picking the last one is not "none".
+      const answered =
+        key === 'injuries' || key === 'allergies'
+          ? { ...state.answered, [key]: next.length > 0 }
+          : state.answered
+      return { [key]: next, answered } as Partial<OnboardingState>
     }),
-  reset: () => set(INITIAL),
+  declareNone: (key) =>
+    set((state) => ({ [key]: [], answered: { ...state.answered, [key]: true } }) as Partial<OnboardingState>),
+  hydrate: (profile) => {
+    const { locale: _locale, ...draft } = profile
+    // A saved profile was answered when it was saved.
+    set({ ...draft, answered: { injuries: true, allergies: true } })
+  },
+  reset: () => set({ ...INITIAL, answered: UNANSWERED }),
 }))
 
 export const SEXES: Sex[] = ['m', 'f']

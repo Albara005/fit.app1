@@ -13,7 +13,7 @@ import { colors, space } from '../../lib/theme'
  * or is not configured at all, the rules-based plan lands here instead.
  */
 export default function Generating() {
-  const { t } = useT()
+  const { t, locale } = useT()
   const profile = useDerivedProfile()
   const generate = useGeneratePlan()
   const saveProfile = useSaveProfile()
@@ -69,7 +69,7 @@ export default function Generating() {
       <Screen footer={<Button label={t('common.start')} onPress={() => router.replace('/(tabs)/today')} />}>
         <Spacer size={space.xxl} />
         <Title>{t('plan.week', { index: 1 })}</Title>
-        <Body>{outcome.plan.rationale.ar}</Body>
+        <Body>{outcome.plan.rationale[locale]}</Body>
         {outcome.fellBack ? (
           <Card>
             <Small>{t('safety.templateFallback')}</Small>

@@ -3,13 +3,18 @@ import { getLocales } from 'expo-localization'
 import { kv, readJson, writeJson } from '../data/kv'
 import type { Locale } from '../types'
 
+/** 'system' follows the device; the other two pin a theme regardless of it. */
+export type ThemePreference = 'system' | 'light' | 'dark'
+
 interface SettingsState {
   locale: Locale
+  theme: ThemePreference
   lockEnabled: boolean
   unlocked: boolean
   /** Highest plan week the user has actually opened. -1 means none yet. */
   lastSeenPlanWeek: number
   setLocale: (locale: Locale) => void
+  setTheme: (theme: ThemePreference) => void
   setLockEnabled: (enabled: boolean) => void
   setUnlocked: (unlocked: boolean) => void
   markPlanSeen: (weekIndex: number) => void
@@ -30,12 +35,17 @@ function initialLocale(): Locale {
 
 export const useSettings = create<SettingsState>((set, get) => ({
   locale: initialLocale(),
+  theme: readJson<{ theme?: ThemePreference }>(kv, KEY, {}).theme ?? 'system',
   lockEnabled: readJson<{ lockEnabled?: boolean }>(kv, KEY, {}).lockEnabled ?? false,
   unlocked: false,
   lastSeenPlanWeek: readJson<{ lastSeenPlanWeek?: number }>(kv, KEY, {}).lastSeenPlanWeek ?? -1,
   setLocale: (locale) => {
     set({ locale })
     writeJson(kv, KEY, { ...readJson(kv, KEY, {}), locale })
+  },
+  setTheme: (theme) => {
+    set({ theme })
+    writeJson(kv, KEY, { ...readJson(kv, KEY, {}), theme })
   },
   setLockEnabled: (lockEnabled) => {
     set({ lockEnabled, unlocked: get().unlocked || !lockEnabled })

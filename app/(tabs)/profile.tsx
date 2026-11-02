@@ -8,6 +8,7 @@ import { authenticate, lockAvailable } from '../../lib/auth/deviceLock'
 import { signOut, useSession } from '../../lib/auth/session'
 import { useProfile, useSessionsThisWeek } from '../../lib/data/queries'
 import { useT } from '../../lib/i18n/useT'
+import { useOnboarding } from '../../lib/store/onboarding'
 import { useSettings } from '../../lib/store/settings'
 import { colors, radius, space, type } from '../../lib/theme'
 import type { Locale } from '../../lib/types'
@@ -86,7 +87,15 @@ export default function ProfileTab() {
 
       <SectionTitle>{t('profile.title')}</SectionTitle>
       <Card style={s.links}>
-        <LinkRow label={t('profile.edit')} onPress={() => router.push('/(onboarding)/basics')} />
+        <LinkRow
+          label={t('profile.edit')}
+          onPress={() => {
+            // The draft is in memory only. Without this, after a restart it holds
+            // the defaults and saving it writes allergies: [] over the real ones.
+            if (profile) useOnboarding.getState().hydrate(profile)
+            router.push('/(onboarding)/basics')
+          }}
+        />
         <Divider />
         <LinkRow label={t('profile.privacy')} onPress={() => router.push('/privacy')} />
         {session?.userId ? (

@@ -12,10 +12,10 @@ const DIET_KEY: Record<string, string> = {
 
 export default function AllergiesStep() {
   const { t } = useT()
-  const { allergies, dietary, set, toggle } = useOnboarding()
+  const { allergies, dietary, toggle, answered, declareNone } = useOnboarding()
 
   return (
-    <Screen footer={<Button label={t('common.next')} onPress={() => router.push('/(onboarding)/consent')} />}>
+    <Screen footer={<Button label={t('common.next')} disabled={!answered.allergies} onPress={() => router.push('/(onboarding)/consent')} />}>
       <Steps current={6} total={8} />
       <Title>{t('onboarding.allergiesTitle')}</Title>
       <Body>{t('onboarding.allergiesBody')}</Body>
@@ -23,8 +23,8 @@ export default function AllergiesStep() {
       <Wrap>
         <Chip
           label={t('onboarding.allergiesNone')}
-          selected={allergies.length === 0}
-          onPress={() => set('allergies', [])}
+          selected={answered.allergies && allergies.length === 0}
+          onPress={() => declareNone('allergies')}
         />
         {ALLERGENS.map((value) => (
           <Chip
