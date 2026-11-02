@@ -88,43 +88,49 @@ export default function RootLayout() {
     [],
   )
 
-  // Local files, so this is a frame or two. Painting before they land would
-  // flash every line in the fallback face; a failure paints anyway, in the
-  // fallback, rather than leaving a blank screen.
-  if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: p.bg }} />
+  // Painting before the fonts land would flash every line in the fallback face,
+  // so the app stays invisible until then — but mounted, so routing and the
+  // first reads run while the fonts download instead of after. A failure
+  // shows the app anyway, in the fallback face, rather than a blank screen.
+  const ready = fontsLoaded || !!fontError
 
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <StatusBar style={name === 'dark' ? 'light' : 'dark'} />
-        <LockGate>
-          <Stack
-            screenOptions={{
-              headerStyle: { backgroundColor: p.bg },
-              headerTintColor: p.text,
-              headerTitleStyle: { fontFamily: type.heading.fontFamily, fontSize: type.heading.fontSize },
-              headerShadowVisible: false,
-              contentStyle: { backgroundColor: p.bg },
-              animation: 'fade',
-            }}
-          >
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            {/* Without an explicit title the header falls back to the route
-                path, so a modal opens with "workout/[dayId]" across the top. */}
-            <Stack.Screen
-              name="workout/[dayId]"
-              options={{ presentation: 'modal', title: t('workout.title') }}
-            />
-            <Stack.Screen name="review" options={{ presentation: 'modal', title: t('review.title') }} />
-            <Stack.Screen name="phase" options={{ presentation: 'modal', title: t('phase.title') }} />
-            <Stack.Screen name="privacy" options={{ title: t('privacy.title') }} />
-            <Stack.Screen name="meal/photo" options={{ presentation: 'modal', title: t('meals.photo') }} />
-            <Stack.Screen name="meal/label" options={{ presentation: 'modal', title: t('meals.labelTitle') }} />
-          </Stack>
-        </LockGate>
+        <View
+          aria-hidden={!ready}
+          style={[{ flex: 1, backgroundColor: p.bg }, !ready && { opacity: 0, pointerEvents: 'none' }]}
+        >
+          <LockGate>
+            <Stack
+              screenOptions={{
+                headerStyle: { backgroundColor: p.bg },
+                headerTintColor: p.text,
+                headerTitleStyle: { fontFamily: type.heading.fontFamily, fontSize: type.heading.fontSize },
+                headerShadowVisible: false,
+                contentStyle: { backgroundColor: p.bg },
+                animation: 'fade',
+              }}
+            >
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              {/* Without an explicit title the header falls back to the route
+                  path, so a modal opens with "workout/[dayId]" across the top. */}
+              <Stack.Screen
+                name="workout/[dayId]"
+                options={{ presentation: 'modal', title: t('workout.title') }}
+              />
+              <Stack.Screen name="review" options={{ presentation: 'modal', title: t('review.title') }} />
+              <Stack.Screen name="phase" options={{ presentation: 'modal', title: t('phase.title') }} />
+              <Stack.Screen name="privacy" options={{ title: t('privacy.title') }} />
+              <Stack.Screen name="meal/photo" options={{ presentation: 'modal', title: t('meals.photo') }} />
+              <Stack.Screen name="meal/label" options={{ presentation: 'modal', title: t('meals.labelTitle') }} />
+            </Stack>
+          </LockGate>
+        </View>
       </SafeAreaProvider>
     </QueryClientProvider>
   )
