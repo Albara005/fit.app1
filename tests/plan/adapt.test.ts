@@ -25,6 +25,14 @@ describe('daily adaptation', () => {
     expect(a.line.ar).toContain('5')
   })
 
+  it('counts hours the way Arabic does, in the sentence the user reads', () => {
+    // «نمت 2 ساعات» and "You slept 1 hours" were both reachable from the stepper.
+    expect(adapt(day(), checkIn({ sleepHours: 2 })).line.ar).toContain('نمت ساعتين')
+    expect(adapt(day(), checkIn({ sleepHours: 1 })).line.ar).toContain('نمت ساعة واحدة')
+    expect(adapt(day(), checkIn({ sleepHours: 1 })).line.en).toContain('slept 1 hour,')
+    expect(adapt(day(), checkIn({ sleepHours: 4.5 })).line.ar).toContain('نمت 4.5 ساعات')
+  })
+
   it('eases intensity on low energy', () => {
     const base = day()
     const a = adapt(base, checkIn({ energy: 1 }))
@@ -61,6 +69,12 @@ describe('daily adaptation', () => {
     expect(a.day.exercises.length).toBeGreaterThanOrEqual(2)
     expect(a.day.exercises[0]!.id).toBe(base.exercises[0]!.id)
     expect(a.line.ar).toContain('30')
+  })
+
+  it('says ten minutes in the plural, not «10 دقيقة»', () => {
+    const a = adapt(day(), checkIn({ minutesAvailable: 10 }))
+    expect(a.codes).toContain('SHORT_ON_TIME')
+    expect(a.line.ar).toContain('عندك 10 دقائق')
   })
 
   it('adds a set when everything says green', () => {

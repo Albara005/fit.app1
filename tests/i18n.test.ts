@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import ar from '../locales/ar.json'
 import en from '../locales/en.json'
-import { isRtl, ltr, makeT, translate, isolateRanges } from '../lib/i18n'
+import { AR_COUNT, countAr, countEn, isRtl, isolateRanges, ltr, makeT, translate } from '../lib/i18n'
 
 type Node = Record<string, unknown>
 const flatten = (node: Node, prefix = ''): string[] =>
@@ -112,5 +112,29 @@ describe('Arabic numeric ranges', () => {
   it('apply to Arabic copy only', () => {
     expect(translate('ar', 'onboarding.loopPhaseTime')).toContain('\u20666–8\u2069')
     expect(translate('en', 'onboarding.loopPhaseTime')).toBe('Every 6–8 weeks')
+  })
+})
+
+describe('counting', () => {
+  it('gives one and two their own Arabic forms', () => {
+    expect(countAr(1, AR_COUNT.days)).toBe('يوم واحد')
+    expect(countAr(2, AR_COUNT.days)).toBe('يومين')
+    expect(countAr(2, AR_COUNT.hours)).toBe('ساعتين')
+  })
+
+  it('takes the plural from three to ten, the singular from eleven', () => {
+    expect(countAr(3, AR_COUNT.weeks)).toBe('3 أسابيع')
+    expect(countAr(10, AR_COUNT.minutes)).toBe('10 دقائق')
+    expect(countAr(11, AR_COUNT.weeks)).toBe('11 أسبوع')
+    expect(countAr(45, AR_COUNT.minutes)).toBe('45 دقيقة')
+  })
+
+  it('reads a fraction as the plural', () => {
+    expect(countAr(4.5, AR_COUNT.hours)).toBe('4.5 ساعات')
+  })
+
+  it('makes English singular only at one', () => {
+    expect(countEn(1, 'hour', 'hours')).toBe('1 hour')
+    expect(countEn(2, 'hour', 'hours')).toBe('2 hours')
   })
 })

@@ -1,3 +1,4 @@
+import { AR_COUNT, countAr, countEn } from '../i18n'
 import type { CheckIn, Locale, WorkoutDay } from '../types'
 
 export type AdaptationCode =
@@ -53,8 +54,8 @@ function fitToTime(day: WorkoutDay, minutes: number): WorkoutDay {
 
 const LINES: Record<AdaptationCode, (n: number) => { ar: string; en: string }> = {
   SLEEP_DEBT: (h) => ({
-    ar: `نمت ${h} ساعات بس، فخفّفت مجموعة من كل تمرين. النوم جزء من البرنامج مو خارجه.`,
-    en: `You slept ${h} hours, so I took a set off each lift. Sleep is part of the programme, not outside it.`,
+    ar: `نمت ${countAr(h, AR_COUNT.hours)} بس، فخفّفت مجموعة من كل تمرين. النوم جزء من البرنامج مو خارجه.`,
+    en: `You slept ${countEn(h, 'hour', 'hours')}, so I took a set off each lift. Sleep is part of the programme, not outside it.`,
   }),
   LOW_ENERGY: () => ({
     ar: 'طاقتك اليوم منخفضة، فنزّلت شدة التمرين درجة. تمرين خفيف تكمله أفضل من تمرين ثقيل تتركه.',
@@ -69,7 +70,7 @@ const LINES: Record<AdaptationCode, (n: number) => { ar: string; en: string }> =
     en: 'Stressful day, so intensity is down. Today the session is for your head more than your numbers.',
   }),
   SHORT_ON_TIME: (m) => ({
-    ar: `عندك ${m} دقيقة، فرتّبت التمرين على الأساسيات وقصّرت الراحات.`,
+    ar: `عندك ${countAr(m, AR_COUNT.minutes)}، فرتّبت التمرين على الأساسيات وقصّرت الراحات.`,
     en: `You have ${m} minutes, so I kept the main lifts and shortened the rests.`,
   }),
   GREEN_LIGHT: () => ({

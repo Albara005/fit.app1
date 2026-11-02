@@ -54,6 +54,36 @@ export function isolateRanges(text: string): string {
   return text.replace(RANGE, (range) => ltr(range))
 }
 
+/**
+ * Arabic does not count as "N + plural". One and two have forms of their own
+ * («يومين», not «2 أيام»), three to ten take the plural, eleven and up the
+ * singular. A fraction reads as the plural («4.5 ساعات»).
+ */
+export interface ArabicCount {
+  one: string
+  two: string
+  few: string
+  many: string
+}
+
+export const AR_COUNT = {
+  days: { one: 'يوم واحد', two: 'يومين', few: 'أيام', many: 'يوم' },
+  hours: { one: 'ساعة واحدة', two: 'ساعتين', few: 'ساعات', many: 'ساعة' },
+  minutes: { one: 'دقيقة واحدة', two: 'دقيقتين', few: 'دقائق', many: 'دقيقة' },
+  weeks: { one: 'أسبوع واحد', two: 'أسبوعين', few: 'أسابيع', many: 'أسبوع' },
+} satisfies Record<string, ArabicCount>
+
+export function countAr(n: number, forms: ArabicCount): string {
+  if (n === 1) return forms.one
+  if (n === 2) return forms.two
+  return `${n} ${Number.isInteger(n) && n > 10 ? forms.many : forms.few}`
+}
+
+/** English needs only the singular: "1 hours" is the whole bug. */
+export function countEn(n: number, one: string, other: string): string {
+  return `${n} ${n === 1 ? one : other}`
+}
+
 export function makeT(locale: Locale) {
   return (key: string, params?: Record<string, string | number>) => translate(locale, key, params)
 }
