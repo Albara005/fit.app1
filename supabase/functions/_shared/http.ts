@@ -21,19 +21,40 @@ export interface Caller {
   admin: SupabaseClient
 }
 
+/**
+ * The project's `default` key of a kind, from the JSON object Supabase now puts
+ * in the environment. The legacy anon/service_role keys it falls back to stop
+ * working at the end of 2026, and a function still reading only them would
+ * fail every request from that day.
+ */
+function projectKey(kind: 'PUBLISHABLE' | 'SECRET', legacy: string): string {
+  try {
+    const key = JSON.parse(Deno.env.get(`SUPABASE_${kind}_KEYS`) ?? '{}')?.default
+    if (typeof key === 'string' && key.length > 0) return key
+  } catch {
+    // Malformed: fall through to the legacy variable.
+  }
+  return Deno.env.get(legacy)!
+}
+
+/**
+ * Deployed with verify_jwt off: the platform's own check only understands
+ * legacy-signed tokens, and getUser() below is the real check — it asks Auth,
+ * so it holds whichever key signed the session.
+ */
 export async function authenticate(req: Request): Promise<Caller | null> {
   const authorization = req.headers.get('Authorization')
   if (!authorization) return null
 
   const url = Deno.env.get('SUPABASE_URL')!
-  const anon = Deno.env.get('SUPABASE_ANON_KEY')!
-  const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const publishable = projectKey('PUBLISHABLE', 'SUPABASE_ANON_KEY')
+  const secret = projectKey('SECRET', 'SUPABASE_SERVICE_ROLE_KEY')
 
-  const db = createClient(url, anon, { global: { headers: { Authorization: authorization } } })
+  const db = createClient(url, publishable, { global: { headers: { Authorization: authorization } } })
   const { data, error } = await db.auth.getUser()
   if (error || !data.user) return null
 
-  return { userId: data.user.id, db, admin: createClient(url, service) }
+  return { userId: data.user.id, db, admin: createClient(url, secret) }
 }
 
 /**

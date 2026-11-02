@@ -38,6 +38,10 @@ const SYSTEM = [
   'Name the dish in Arabic as people in the Gulf say it.',
 ].join(' ')
 
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
+const isImageType = (value: unknown): value is (typeof IMAGE_TYPES)[number] =>
+  (IMAGE_TYPES as readonly unknown[]).includes(value)
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -53,7 +57,10 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => null)
   const imageBase64: string | undefined = body?.imageBase64
-  const mediaType: string = body?.mediaType ?? 'image/jpeg'
+  // Checked, not trusted: anything else is refused here, before it costs a
+  // model call that the API would reject anyway.
+  const mediaType = body?.mediaType ?? 'image/jpeg'
+  if (!isImageType(mediaType)) return json({ error: 'unsupported_image_type' }, 400)
   if (!imageBase64) return json({ error: 'no_image' }, 400)
   if (imageBase64.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: 'image_too_large' }, 413)
 

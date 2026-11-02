@@ -1,7 +1,7 @@
 // The only place an Anthropic key exists. It is read from the function's
 // environment and never leaves the server — a key shipped in the client is an
 // open invoice within days.
-import Anthropic from 'npm:@anthropic-ai/sdk@^0.70.0'
+import Anthropic from 'npm:@anthropic-ai/sdk@^0.137.0'
 
 // The allowlist lives in lib/privacy/modelSafe.ts and is generated into
 // _shared by scripts/sync-edge-safety.mjs, so the app and the server cannot
