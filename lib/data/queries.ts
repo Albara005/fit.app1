@@ -21,7 +21,20 @@ export const keys = {
   sessions: ['sessions'] as const,
   meals: (day: string) => ['meals', day] as const,
   corrections: ['corrections'] as const,
+  weeklyReview: ['weeklyReview'] as const,
+  phaseReview: ['phaseReview'] as const,
 }
+
+/**
+ * The language a profile or plan is written in is the app's language at the
+ * moment of writing, never one carried on an object loaded earlier: a review
+ * applied after switching to English otherwise saved — and generated — in
+ * Arabic.
+ */
+const inAppLocale = <T extends Omit<Profile, 'locale'>>(profile: T): T & Pick<Profile, 'locale'> => ({
+  ...profile,
+  locale: useSettings.getState().locale,
+})
 
 export function useProfile(options: { enabled?: boolean } = {}): UseQueryResult<Profile | null> {
   return useQuery({
@@ -41,7 +54,7 @@ export function useDerivedProfile(): DerivedProfile | null {
 export function useSaveProfile() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (profile: Profile) => repo().saveProfile(profile),
+    mutationFn: (profile: Omit<Profile, 'locale'>) => repo().saveProfile(inAppLocale(profile)),
     onSuccess: () => void qc.invalidateQueries({ queryKey: keys.profile }),
   })
 }
@@ -74,7 +87,7 @@ export function useGeneratePlan() {
     mutationFn: async ({ profile, weekIndex = 0 }) =>
       producePlan({
         repo: repo(),
-        profile,
+        profile: inAppLocale(profile),
         weekIndex,
         fromModel: (p, week) => requestModelPlan(p, week),
       }),
@@ -129,12 +142,11 @@ export function useAddWeight() {
     mutationFn: (entry: WeightEntry) => repo().addWeight(entry),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: keys.weights })
-      // Both reviews are computed from the weigh-ins, but their keys do not name
-      // them, so a new reading would leave a cached review standing. Reset, not
-      // invalidate: an invalidated review is still shown — with Apply live —
-      // while its refetch runs.
-      void qc.resetQueries({ queryKey: ['weeklyReview'] })
-      void qc.resetQueries({ queryKey: ['phaseReview'] })
+      // A weight already in a cached review would sit beside a review that
+      // never saw it; reset, not invalidate, because an invalidated review
+      // stays on screen — Apply live — while it refetches.
+      void qc.resetQueries({ queryKey: keys.weeklyReview })
+      void qc.resetQueries({ queryKey: keys.phaseReview })
     },
   })
 }
@@ -197,20 +209,31 @@ export function useAddCorrection() {
  */
 export type WithReadings<T> = T & { readings: WeightEntry[] }
 
+/**
+ * A review is a decision made from the logs as they stand when it is opened.
+ * Nothing is kept once its screen closes, so the next visit never starts from
+ * a decision made on older logs.
+ */
+const REVIEW_CACHE = { gcTime: 0 } as const
+
 export function useWeeklyReview(profile: DerivedProfile | null): UseQueryResult<WithReadings<WeeklyReview> | null> {
   return useQuery({
-    queryKey: ['weeklyReview', profile?.weightKg, profile?.goal],
+    queryKey: [...keys.weeklyReview, profile?.weightKg, profile?.goal],
     enabled: profile !== null,
+    ...REVIEW_CACHE,
     queryFn: async () => {
       if (!profile) return null
-      const plan = await repo().latestPlan()
-      const sessions = await repo().listSessions(startOfWeekIso())
-      const weights = await repo().listWeights(14)
+      const [plan, sessions, weights, checkIns] = await Promise.all([
+        repo().latestPlan(),
+        repo().listSessions(startOfWeekIso()),
+        repo().listWeights(14),
+        repo().listCheckIns(7),
+      ])
       const review = reviewWeek(profile, {
         weekIndex: plan?.weekIndex ?? 0,
         sessionsPlanned: plan?.days.length ?? profile.daysPerWeek,
         sessionsCompleted: sessions.length,
-        checkIns: await repo().listCheckIns(7),
+        checkIns,
         weightsKg: weights.map((w) => w.weightKg),
       })
       return { ...review, readings: weights }
@@ -225,11 +248,17 @@ export function useWeeklyReview(profile: DerivedProfile | null): UseQueryResult<
  */
 export function usePhaseReview(profile: DerivedProfile | null): UseQueryResult<WithReadings<PhaseReview> | null> {
   return useQuery({
-    queryKey: ['phaseReview', profile?.goal, profile?.weightKg],
+    queryKey: [...keys.phaseReview, profile?.goal, profile?.weightKg],
     enabled: profile !== null,
+    ...REVIEW_CACHE,
     queryFn: async () => {
       if (!profile) return null
-      const plan = await repo().latestPlan()
+      // Only the sessions wait on the plan, for how far back the phase reaches.
+      const [plan, weights, checkIns] = await Promise.all([
+        repo().latestPlan(),
+        repo().listWeights(60),
+        repo().listCheckIns(60),
+      ])
       const weeks = Math.max(1, (plan?.weekIndex ?? 0) + 1)
       const since = new Date()
       since.setDate(since.getDate() - weeks * 7)
@@ -242,13 +271,12 @@ export function usePhaseReview(profile: DerivedProfile | null): UseQueryResult<W
         if (bucket >= 0 && bucket < weeks) perWeek[bucket] = (perWeek[bucket] ?? 0) + 1
       }
 
-      const weights = await repo().listWeights(60)
       const review = reviewPhase({
         profile,
         sessionsPerWeek: perWeek,
         plannedPerWeek: plan?.days.length ?? profile.daysPerWeek,
         weightsKg: weights.map((w) => w.weightKg),
-        checkIns: await repo().listCheckIns(60),
+        checkIns,
       })
       return { ...review, readings: weights }
     },

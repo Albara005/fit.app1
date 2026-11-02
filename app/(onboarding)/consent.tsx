@@ -7,7 +7,7 @@ import { useT } from '../../lib/i18n/useT'
 import { useOnboarding } from '../../lib/store/onboarding'
 
 export default function ConsentStep() {
-  const { t, locale } = useT()
+  const { t } = useT()
   const draft = useOnboarding()
   const { data: saved } = useConsents()
   const { data: profile, isPending: profilePending } = useProfile()
@@ -50,9 +50,7 @@ export default function ConsentStep() {
         age: draft.age, sex: draft.sex, heightCm: draft.heightCm, weightKg: draft.weightKg,
         goal: draft.goal, activity: draft.activity, daysPerWeek: draft.daysPerWeek,
         equipment: draft.equipment, injuries: draft.injuries, allergies: draft.allergies,
-        // The generator writes the plan in this language; hard-coding 'ar' gave
-        // English speakers a plan in Gulf Arabic.
-        dietary: draft.dietary, locale,
+        dietary: draft.dietary,
       })
       router.replace('/(onboarding)/generating')
     } finally {
