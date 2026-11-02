@@ -37,18 +37,11 @@ const CIRCLES: Partial<Record<IconName, { cx: number; cy: number; r: number }>> 
   info: { cx: 12, cy: 12, r: 9 },
 }
 
-export function Icon({
-  name, color, size = 24, label,
-}: {
-  name: IconName
-  color: string
-  size?: number
-  /**
-   * Only for an icon that stands alone and means something. An icon beside its
-   * own text label stays out of the accessibility tree, or it is read twice.
-   */
-  label?: string
-}) {
+/**
+ * Always beside its own text or inside a labelled control, so always hidden
+ * from the accessibility tree: announced as well, it would be read twice.
+ */
+export function Icon({ name, color, size = 24 }: { name: IconName; color: string; size?: number }) {
   const { rtl } = useT()
   const flip = rtl && DIRECTIONAL.has(name)
   const circle = CIRCLES[name]
@@ -59,9 +52,7 @@ export function Icon({
       viewBox="0 0 24 24"
       fill="none"
       style={flip ? { transform: [{ scaleX: -1 }] } : undefined}
-      accessible={label !== undefined}
-      accessibilityLabel={label}
-      aria-hidden={label === undefined}
+      aria-hidden
     >
       <Path d={PATHS[name]} stroke={color} strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" />
       {circle ? <Circle {...circle} stroke={color} strokeWidth={1.75} /> : null}

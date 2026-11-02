@@ -120,6 +120,9 @@ const base = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   grow: { flex: 1 },
+  // Opacity, never scale: a pressed control that changes size moves its
+  // neighbours. One value, so every control answers a press the same way.
+  pressed: { opacity: 0.8 },
 })
 
 // ── Type ────────────────────────────────────────────────────────────────────
@@ -129,19 +132,14 @@ export function Display({ children }: { children: ReactNode }) {
   return <Text accessibilityRole="header" style={s.display}>{children}</Text>
 }
 
-export function Title({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
+export function Title({ children }: { children: ReactNode }) {
   const s = useTextStyles()
-  return <Text accessibilityRole="header" style={[s.title, style]}>{children}</Text>
+  return <Text accessibilityRole="header" style={s.title}>{children}</Text>
 }
 
 export function Heading({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
   const s = useTextStyles()
   return <Text accessibilityRole="header" style={[s.heading, style]}>{children}</Text>
-}
-
-export function Lead({ children }: { children: ReactNode }) {
-  const s = useTextStyles()
-  return <Text style={s.lead}>{children}</Text>
 }
 
 export function Body({
@@ -239,21 +237,15 @@ const useCardStyles = makeStyles((p) => ({
  * The coach's one sentence, and the only tinted surface on a screen. If two of
  * these compete on one screen, the screen is saying two things.
  */
-export function CoachLine({
-  label, children, tone = 'default',
-}: {
-  label?: string
-  children: ReactNode
-  tone?: 'default' | 'warn'
-}) {
+export function CoachLine({ label, children }: { label?: string; children: ReactNode }) {
   const s = useCoachStyles()
   return (
     <View style={s.wrap}>
       {/* A separate view rather than a start border: a row flips with the
           writing direction everywhere, a logical border does not on the web. */}
-      <View style={[s.bar, tone === 'warn' && s.barWarn]} />
+      <View style={s.bar} />
       <View style={s.content}>
-        {label ? <Text style={[s.label, tone === 'warn' && s.labelWarn]}>{label}</Text> : null}
+        {label ? <Text style={s.label}>{label}</Text> : null}
         <Text style={s.text}>{children}</Text>
       </View>
     </View>
@@ -269,10 +261,8 @@ const useCoachStyles = makeStyles((p) => ({
     padding: space.lg,
   },
   bar: { width: 3, borderRadius: radius.pill, backgroundColor: p.accent },
-  barWarn: { backgroundColor: p.warn },
   content: { flex: 1, gap: space.xs },
   label: { ...type.label, color: p.accent },
-  labelWarn: { color: p.warn },
   text: { ...type.lead, color: p.text },
 }))
 
@@ -339,7 +329,7 @@ export function Button({
       style={({ pressed }) => [
         s.button,
         s[variant],
-        pressed && s.pressed,
+        pressed && base.pressed,
         disabled && s.disabled,
         style,
       ]}
@@ -369,35 +359,21 @@ const useButtonStyles = makeStyles((p) => ({
   secondary: { backgroundColor: p.surface, borderWidth: 1, borderColor: p.lineStrong },
   quiet: { backgroundColor: 'transparent', minHeight: touch.min },
   danger: { backgroundColor: p.dangerSoft, borderWidth: 1, borderColor: p.danger },
-  // Opacity, never scale: a pressed control that changes size moves its neighbours.
-  pressed: { opacity: 0.8 },
   disabled: { opacity: 0.45 },
   label: { ...type.bodyStrong },
 }))
 
-export function ListRow({
-  label, detail, onPress, icon,
-}: {
-  label: string
-  detail?: string
-  onPress: () => void
-  icon?: IconName
-}) {
+export function ListRow({ label, onPress }: { label: string; onPress: () => void }) {
   const s = useListStyles()
   const { p } = useTheme()
-  const join = useJoin()
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={join(label, detail)}
+      accessibilityLabel={label}
       onPress={onPress}
-      style={({ pressed }) => [s.row, pressed && s.pressed]}
+      style={({ pressed }) => [s.row, pressed && base.pressed]}
     >
-      {icon ? <Icon name={icon} color={p.textMuted} /> : null}
-      <View style={base.grow}>
-        <Text style={s.label}>{label}</Text>
-        {detail ? <Text style={s.detail}>{detail}</Text> : null}
-      </View>
+      <Text style={[s.label, base.grow]}>{label}</Text>
       <Icon name="chevron" color={p.textMuted} size={20} />
     </Pressable>
   )
@@ -413,6 +389,7 @@ export function SwitchRow({
 }) {
   const s = useListStyles()
   const { p } = useTheme()
+  const join = useJoin()
   return (
     <View style={s.row}>
       <View style={base.grow}>
@@ -420,8 +397,9 @@ export function SwitchRow({
         {detail ? <Text style={s.detail}>{detail}</Text> : null}
       </View>
       <Switch
-        accessibilityLabel={label}
-        accessibilityHint={detail}
+        // Folded into the name: react-native-web drops accessibilityHint, and
+        // puts any other prop on a wrapper rather than the switch itself.
+        accessibilityLabel={join(label, detail)}
         value={value}
         onValueChange={onValueChange}
         trackColor={{ false: p.lineStrong, true: p.primary }}
@@ -441,7 +419,6 @@ const useListStyles = makeStyles((p) => ({
     minHeight: 56,
     paddingVertical: space.sm,
   },
-  pressed: { opacity: 0.7 },
   label: { ...type.body, color: p.text },
   detail: { ...type.caption, color: p.textMuted },
 }))
@@ -471,7 +448,7 @@ export function Choice({
       aria-checked={selected}
       accessibilityLabel={join(label, description)}
       onPress={onPress}
-      style={({ pressed }) => [s.choice, selected && s.choiceOn, pressed && s.pressed]}
+      style={({ pressed }) => [s.choice, selected && s.choiceOn, pressed && base.pressed]}
     >
       <View style={[mode === 'single' ? s.radio : s.box, selected && s.markOn]}>
         {selected ? <Icon name="check" color={p.onPrimary} size={16} /> : null}
@@ -499,7 +476,6 @@ const useChoiceStyles = makeStyles((p) => ({
     borderColor: p.lineStrong,
   },
   choiceOn: { borderColor: p.primary, backgroundColor: p.accentSoft },
-  pressed: { opacity: 0.8 },
   radio: {
     width: 24, height: 24, borderRadius: radius.pill,
     borderWidth: 1.5, borderColor: p.lineStrong, alignItems: 'center', justifyContent: 'center',
@@ -534,7 +510,7 @@ export function Segmented<T extends string>({
             accessibilityRole="radio"
             aria-checked={on}
             onPress={() => onChange(option.value)}
-            style={({ pressed }) => [s.segment, on && s.segmentOn, pressed && s.pressed]}
+            style={({ pressed }) => [s.segment, on && s.segmentOn, pressed && base.pressed]}
           >
             <Text style={[s.text, on && s.textOn]} numberOfLines={1}>
               {option.label}
@@ -565,7 +541,6 @@ const useSegmentStyles = makeStyles((p) => ({
     paddingHorizontal: space.sm,
   },
   segmentOn: { backgroundColor: p.primary },
-  pressed: { opacity: 0.8 },
   text: { ...type.bodyStrong, color: p.text },
   textOn: { color: p.onPrimary },
 }))
@@ -633,7 +608,7 @@ export function Stepper({
         }}
         onLongPress={() => hold(dir)}
         onPressOut={stop}
-        style={({ pressed }) => [s.side, pressed && s.pressed, atLimit && s.inert]}
+        style={({ pressed }) => [s.side, pressed && base.pressed, atLimit && s.inert]}
       >
         <Icon name={dir === 1 ? 'plus' : 'minus'} color={p.accent} />
       </Pressable>
@@ -663,7 +638,6 @@ const useStepperStyles = makeStyles((p) => ({
     borderColor: p.lineStrong,
   },
   side: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
-  pressed: { opacity: 0.6 },
   inert: { opacity: 0.35 },
   value: { flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: space.xs },
   number: { ...type.numeral, color: p.text },
@@ -694,7 +668,7 @@ export function Scale({
               aria-checked={on}
               accessibilityLabel={join(String(n), n === 1 ? low : n === 5 ? high : undefined)}
               onPress={() => onChange(n)}
-              style={({ pressed }) => [s.dot, on && s.dotOn, pressed && s.pressed]}
+              style={({ pressed }) => [s.dot, on && s.dotOn, pressed && base.pressed]}
             >
               <Text style={[s.num, on && s.numOn]}>{n}</Text>
             </Pressable>
@@ -724,7 +698,6 @@ const useScaleStyles = makeStyles((p) => ({
     justifyContent: 'center',
   },
   dotOn: { backgroundColor: p.primary, borderColor: p.primary },
-  pressed: { opacity: 0.8 },
   num: { ...type.numeralSmall, color: p.textMuted },
   numOn: { color: p.onPrimary },
   ends: { flexDirection: 'row', justifyContent: 'space-between' },
@@ -906,7 +879,7 @@ export function Pill({ label, selected, onPress }: { label: string; selected: bo
       onPress={onPress}
       // 44 drawn, 48 touchable: a row of 48-high pills reads as a wall.
       hitSlop={{ top: 2, bottom: 2 }}
-      style={({ pressed }) => [s.pill, selected && s.pillOn, pressed && s.pressed]}
+      style={({ pressed }) => [s.pill, selected && s.pillOn, pressed && base.pressed]}
     >
       {selected ? <Icon name="check" color={p.onPrimary} size={16} /> : null}
       <Text style={[s.text, selected && s.textOn]}>{label}</Text>
@@ -927,7 +900,6 @@ const usePillStyles = makeStyles((p) => ({
     backgroundColor: p.surface,
   },
   pillOn: { backgroundColor: p.primary, borderColor: p.primary },
-  pressed: { opacity: 0.8 },
   text: { ...type.body, color: p.text },
   textOn: { ...type.bodyStrong, color: p.onPrimary },
 }))

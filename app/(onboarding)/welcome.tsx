@@ -1,7 +1,7 @@
 import { router } from 'expo-router'
 import { Text, View } from 'react-native'
 import { Wordmark } from '../../components/Brand'
-import { Body, Button, Caption, Card, Display, Divider, Row, Screen, Segmented, Spacer } from '../../components/ui'
+import { Body, Button, Caption, Card, Display, Divider, Grow, Row, Screen, Segmented, Spacer } from '../../components/ui'
 import { makeStyles } from '../../lib/design/theme'
 import { space } from '../../lib/design/tokens'
 import { type } from '../../lib/design/typography'
@@ -40,7 +40,7 @@ export default function Welcome() {
     >
       <Row>
         <Wordmark size={44} />
-        <View style={s.grow} />
+        <Grow />
         <View style={s.lang}>
           <Segmented
             label={t('common.language')}

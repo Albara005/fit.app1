@@ -9,7 +9,7 @@ import { estimateMeal, formatRange, type EstimateSource, type Macros } from '../
 import { dishKey, memoryLine, recall } from '../lib/nutrition/memory'
 import type { CookMethod, PortionSize } from '../lib/types'
 import {
-  Badge, Body, Button, Caption, Card, CoachLine, Field, Grow, Pill, Row, Screen, Section, Segmented, Title, Wrap,
+  Badge, Body, Button, Caption, Card, CoachLine, Field, Pill, Row, Screen, Section, Segmented, Title, Wrap,
 } from './ui'
 
 const COOK: CookMethod[] = ['fried', 'grilled', 'boiled']
@@ -144,7 +144,6 @@ export function MealSheet({ onClose }: { onClose: () => void }) {
             <Body strong style={{ flex: 1 }}>
               {formatRange(estimate.kcal, t('common.kcal'))}
             </Body>
-            <Grow />
             <Badge label={confidenceLabel} />
           </Row>
           <View style={{ gap: 2 }}>
