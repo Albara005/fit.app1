@@ -22,6 +22,7 @@ npx vitest run -t "counts two days"          # one test, by name
 npx vitest run --coverage                    # lib/safety must stay at 100% statements/functions/lines, 95% branches
 npm run typecheck                            # tsc --noEmit
 npm run build:web                            # expo export --platform web → dist/
+npm run serve:web                            # serves dist/ exactly as production does (PORT, default 8080)
 npm run pack:single                          # dist/ → one self-contained HTML file, for hosted previews
 ```
 
@@ -47,6 +48,8 @@ There is no lint script. Running vitest directly skips the edge sync, and `tests
 **Edge functions** (`supabase/functions/generate-plan`, `analyze-meal`) hold the only model key and enforce per-user quotas through the `consume_quota` RPC (`_shared/http.ts`). Deno needs `.ts` import extensions, so `scripts/sync-edge-safety.mjs` *generates* `supabase/functions/_shared/lib/` from the files in its `SOURCES` list. Never edit that copy; edit `lib/`.
 
 **Schema** lives in `supabase/migrations/0001_init.sql`, and `tests/schema.test.ts` pins its rules: RLS on every table with its policies in the same migration, `WITH CHECK` on updates, and `delete_all_my_data()` deleting from every table. `revoke ... from public` on a function also removes the grant `service_role` inherits — grant it back explicitly.
+
+**Deploy** is Railway, from the root `Dockerfile` (Railway always uses one it finds): Expo builds the export in one stage, and the image that runs holds only Node, `dist/` and `server/serve.mjs`. `EXPO_PUBLIC_*` values are build-time, so each is an `ARG` in the Dockerfile — a new one that is not added there never reaches the bundle on Railway, silently. Read them with `||`, not `??`: a variable created blank arrives as `""`. The server has no dependencies, answers from an in-memory table (no request reaches the filesystem), keeps no access log (the no-health-data rule), and sends a CSP with `script-src 'self'` — an inline script or `eval` breaks the app. The health-check path `/healthz` is set in the Railway dashboard: `railway.json` is deprecated and new services cannot use it.
 
 **What the model sees** is built by copying keys *out* through the allowlist in `lib/privacy/modelSafe.ts`, so a new column cannot leak by default. The privacy screen renders the same list.
 

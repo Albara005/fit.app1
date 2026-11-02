@@ -1,0 +1,14 @@
+# Rebuilt inside the image; sending them would only slow every upload.
+node_modules
+dist
+dist-single
+web-build
+.expo
+coverage
+*.log
+.git
+
+# The deploy's own variables are the only source of build settings. A local
+# .env must never ride along into a production bundle.
+.env
+.env.*
