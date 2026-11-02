@@ -36,10 +36,15 @@ if (!existsSync(entryFile)) {
 let js = readFileSync(entryFile, 'utf8')
 
 // Longest first, so a path that is a prefix of another cannot corrupt it.
-const assetPaths = [...new Set(js.match(/\/assets\/[A-Za-z0-9./_@-]+\.(?:png|jpg|jpeg|gif|webp|svg)/g) ?? [])]
+// Fonts too: the self-hosted faces are what every screen is set in, and
+// without them the preview paints in the fallback face.
+const assetPaths = [...new Set(js.match(/\/assets\/[A-Za-z0-9./_@-]+\.(?:png|jpg|jpeg|gif|webp|svg|ttf|otf|woff2?)/g) ?? [])]
   .sort((a, b) => b.length - a.length)
 
-const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml' }
+const MIME = {
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+  ttf: 'font/ttf', otf: 'font/otf', woff: 'font/woff', woff2: 'font/woff2',
+}
 const missing = []
 let inlined = 0
 
@@ -61,13 +66,21 @@ const inlineSafe = js.replaceAll('</script', '<\\/script')
 
 const page = `<title>Peak Fitness</title>
 <style>
-  /* The app commits to one dark world by design, so the page paints its own
-     ground rather than borrowing the host's — otherwise a light host shows
-     through at every transparent edge. */
+  /* The page paints its own ground rather than borrowing the host's, or a
+     host of the other theme shows through every transparent edge. It follows
+     the device like the app does, so the first frame does not flash the other
+     theme before the app takes over the body colour. */
   html, body { height: 100%; margin: 0; background: #0B140C; overflow: hidden; }
   #root { display: flex; height: 100%; flex: 1; background: #0B140C; }
+  @media (prefers-color-scheme: light) { html, body, #root { background: #F7F9F4; } }
 </style>
 <div id="root"></div>
+<script>
+  // Served under its own filename, the router would read that as a route and
+  // open on "page not found". Such a path is never one of the app's, so the
+  // app starts at its root instead. A host that refuses the change keeps it.
+  try { if (/\.html?$/.test(location.pathname)) history.replaceState(null, '', '/') } catch {}
+</script>
 <script>${inlineSafe}</script>
 `
 
