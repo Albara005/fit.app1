@@ -5,7 +5,7 @@ import { TrendChart } from '../components/TrendChart'
 import {
   Body, Button, Caption, Card, CoachLine, Divider, Row, Screen, Section, Title,
 } from '../components/ui'
-import { useDerivedProfile, useGeneratePlan, usePhaseReview, useSaveProfile, useWeights } from '../lib/data/queries'
+import { useDerivedProfile, useGeneratePlan, usePhaseReview, useSaveProfile } from '../lib/data/queries'
 import { makeStyles } from '../lib/design/theme'
 import { space } from '../lib/design/tokens'
 import { type } from '../lib/design/typography'
@@ -30,8 +30,6 @@ export default function Phase() {
   const s = useStyles()
   const profile = useDerivedProfile()
   const review = usePhaseReview(profile)
-  // The same sixty readings the verdict is made on.
-  const { data: weights } = useWeights(60)
   const saveProfile = useSaveProfile()
   const generate = useGeneratePlan()
   const [outcome, setOutcome] = useState<ShareOutcome | null>(null)
@@ -56,7 +54,8 @@ export default function Phase() {
   }
 
   const suggested = data.suggestedGoal
-  const trend = phaseLine((weights ?? []).map((w) => w.weightKg))
+  // Drawn from the readings the verdict was made on, not a second fetch.
+  const trend = phaseLine(data.readings.map((w) => w.weightKg))
   const text = shareText(data, locale)
 
   async function apply() {
@@ -97,7 +96,7 @@ export default function Phase() {
 
       {trend ? (
         <Card>
-          <TrendChart readings={weights ?? []} line={trend} />
+          <TrendChart readings={data.readings} line={trend} />
         </Card>
       ) : null}
 

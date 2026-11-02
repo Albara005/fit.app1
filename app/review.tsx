@@ -6,7 +6,7 @@ import {
   Body, Button, Caption, Card, CoachLine, Grow, Heading, Meter, Row, Screen, Section, Stat, Stepper, Title,
 } from '../components/ui'
 import {
-  useAddWeight, useDerivedProfile, useGeneratePlan, useSaveProfile, useWeeklyReview, useWeights,
+  useAddWeight, useDerivedProfile, useGeneratePlan, useSaveProfile, useWeeklyReview,
 } from '../lib/data/queries'
 import { today } from '../lib/data/repo'
 import { space } from '../lib/design/tokens'
@@ -30,9 +30,10 @@ export default function Review() {
   // on mount, the review ran without it and never ran again: it reported a
   // trend from every reading except the one this loop asks for.
   const review = useWeeklyReview(logged ? profile : null)
-  // The same fourteen readings the review decides from.
-  const { data: weights } = useWeights(14)
-  const [weight, setWeight] = useState(profile?.weightKg ?? 80)
+  // Untouched means "as saved". Seeded once at mount, the stepper kept 80 kg on
+  // a cold load — before the profile arrived — and Next logged it as today's.
+  const [weightChoice, setWeight] = useState<number | null>(null)
+  const weight = weightChoice ?? profile?.weightKg ?? 80
 
   if (!profile) {
     return (
@@ -64,15 +65,18 @@ export default function Review() {
   }
 
   const data = review.data
-  const trend = weeklyLine((weights ?? []).map((w) => w.weightKg))
+  // Drawn from the readings this review was computed from, not a second fetch.
+  const trend = data ? weeklyLine(data.readings.map((w) => w.weightKg)) : null
 
   return (
     <Screen
       footer={
         <Button
           label={t('review.apply')}
-          loading={generate.isPending || review.isPending}
-          disabled={!data}
+          // isFetching, not isPending: a review being recomputed is not the one
+          // to apply.
+          loading={generate.isPending || review.isFetching}
+          disabled={!data || review.isFetching}
           onPress={async () => {
             if (!data) return
             await saveProfile.mutateAsync(data.nextProfile)
@@ -104,7 +108,7 @@ export default function Review() {
 
           {trend ? (
             <Card>
-              <TrendChart readings={weights ?? []} line={trend} />
+              <TrendChart readings={data.readings} line={trend} />
             </Card>
           ) : null}
 

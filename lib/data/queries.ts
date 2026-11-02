@@ -119,12 +119,8 @@ export function useAdaptedDay(day: WorkoutDay | null, checkIn: CheckIn | null | 
   return adapt(day, checkIn)
 }
 
-/**
- * The most recent `limit` weigh-ins, oldest first. A review charts the same
- * slice it decides from, so pass the limit that review uses.
- */
-export function useWeights(limit = 30) {
-  return useQuery({ queryKey: [...keys.weights, limit], queryFn: () => repo().listWeights(limit) })
+export function useWeights() {
+  return useQuery({ queryKey: keys.weights, queryFn: () => repo().listWeights() })
 }
 
 export function useAddWeight() {
@@ -133,10 +129,12 @@ export function useAddWeight() {
     mutationFn: (entry: WeightEntry) => repo().addWeight(entry),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: keys.weights })
-      // Both reviews are computed from the weigh-ins, but their keys do not
-      // name them — a new reading left a cached review standing on old data.
-      void qc.invalidateQueries({ queryKey: ['weeklyReview'] })
-      void qc.invalidateQueries({ queryKey: ['phaseReview'] })
+      // Both reviews are computed from the weigh-ins, but their keys do not name
+      // them, so a new reading would leave a cached review standing. Reset, not
+      // invalidate: an invalidated review is still shown — with Apply live —
+      // while its refetch runs.
+      void qc.resetQueries({ queryKey: ['weeklyReview'] })
+      void qc.resetQueries({ queryKey: ['phaseReview'] })
     },
   })
 }
@@ -193,7 +191,13 @@ export function useAddCorrection() {
   })
 }
 
-export function useWeeklyReview(profile: DerivedProfile | null): UseQueryResult<WeeklyReview | null> {
+/**
+ * A review together with the readings it was computed from. A chart draws these
+ * — not a second fetch, which could land at a different moment and disagree.
+ */
+export type WithReadings<T> = T & { readings: WeightEntry[] }
+
+export function useWeeklyReview(profile: DerivedProfile | null): UseQueryResult<WithReadings<WeeklyReview> | null> {
   return useQuery({
     queryKey: ['weeklyReview', profile?.weightKg, profile?.goal],
     enabled: profile !== null,
@@ -202,13 +206,14 @@ export function useWeeklyReview(profile: DerivedProfile | null): UseQueryResult<
       const plan = await repo().latestPlan()
       const sessions = await repo().listSessions(startOfWeekIso())
       const weights = await repo().listWeights(14)
-      return reviewWeek(profile, {
+      const review = reviewWeek(profile, {
         weekIndex: plan?.weekIndex ?? 0,
         sessionsPlanned: plan?.days.length ?? profile.daysPerWeek,
         sessionsCompleted: sessions.length,
         checkIns: await repo().listCheckIns(7),
         weightsKg: weights.map((w) => w.weightKg),
       })
+      return { ...review, readings: weights }
     },
   })
 }
@@ -218,7 +223,7 @@ export function useWeeklyReview(profile: DerivedProfile | null): UseQueryResult<
  * logged, so a phase can be reviewed from the same logs the other two loops
  * already write — there is no separate phase record to fall out of sync.
  */
-export function usePhaseReview(profile: DerivedProfile | null): UseQueryResult<PhaseReview | null> {
+export function usePhaseReview(profile: DerivedProfile | null): UseQueryResult<WithReadings<PhaseReview> | null> {
   return useQuery({
     queryKey: ['phaseReview', profile?.goal, profile?.weightKg],
     enabled: profile !== null,
@@ -237,13 +242,15 @@ export function usePhaseReview(profile: DerivedProfile | null): UseQueryResult<P
         if (bucket >= 0 && bucket < weeks) perWeek[bucket] = (perWeek[bucket] ?? 0) + 1
       }
 
-      return reviewPhase({
+      const weights = await repo().listWeights(60)
+      const review = reviewPhase({
         profile,
         sessionsPerWeek: perWeek,
         plannedPerWeek: plan?.days.length ?? profile.daysPerWeek,
-        weightsKg: (await repo().listWeights(60)).map((w) => w.weightKg),
+        weightsKg: weights.map((w) => w.weightKg),
         checkIns: await repo().listCheckIns(60),
       })
+      return { ...review, readings: weights }
     },
   })
 }

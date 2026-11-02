@@ -6,6 +6,7 @@ import { space } from '../lib/design/tokens'
 import { type } from '../lib/design/typography'
 import { ltr } from '../lib/i18n'
 import { useT } from '../lib/i18n/useT'
+import { ticks } from '../lib/design/ticks'
 import type { WeightEntry } from '../lib/data/repo'
 import type { TrendLine } from '../lib/types'
 import { Button, Caption, Divider, Row } from './ui'
@@ -21,17 +22,6 @@ const kg = (v: number) => v.toFixed(1)
 const shortDate = (iso: string) => {
   const [, m, d] = iso.split('-')
   return `${Number(d)}/${Number(m)}`
-}
-
-/** Round, readable ticks: 0.2, 0.5, 1, 2 or 5 kg apart, at most five of them. */
-function ticks(lo: number, hi: number): number[] {
-  const span = Math.max(hi - lo, 0.4)
-  const step = [0.2, 0.5, 1, 2, 5].find((s) => span / s <= 4) ?? 10
-  const start = Math.floor(lo / step) * step
-  const end = Math.ceil(hi / step) * step
-  const out: number[] = []
-  for (let v = start; v <= end + 1e-9; v += step) out.push(Math.round(v * 10) / 10)
-  return out
 }
 
 /**
