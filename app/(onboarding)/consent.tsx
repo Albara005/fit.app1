@@ -1,8 +1,8 @@
 import { router } from 'expo-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { StepProgress } from '../../components/StepProgress'
 import { Body, Button, Choice, Screen, Title } from '../../components/ui'
-import { useConsents, useSaveProfile, useSetConsent } from '../../lib/data/queries'
+import { useConsents, useProfile, useSaveProfile, useSetConsent } from '../../lib/data/queries'
 import { useT } from '../../lib/i18n/useT'
 import { useOnboarding } from '../../lib/store/onboarding'
 
@@ -10,8 +10,20 @@ export default function ConsentStep() {
   const { t, locale } = useT()
   const draft = useOnboarding()
   const { data: saved } = useConsents()
+  const { data: profile, isPending: profilePending } = useProfile()
   const saveProfile = useSaveProfile()
   const setConsent = useSetConsent()
+
+  // The draft lives in memory. Reached by a reload on this screen — or by its
+  // URL — it holds the defaults with both safety questions unanswered, and
+  // saving it would write allergies: [] over the real list. Such a draft is
+  // nobody's answers: restore what is saved, if anything, and start over.
+  const unanswered = !draft.answered.injuries || !draft.answered.allergies
+  useEffect(() => {
+    if (!unanswered || profilePending) return
+    if (profile) useOnboarding.getState().hydrate(profile)
+    router.replace('/(onboarding)/basics')
+  }, [unanswered, profilePending, profile])
 
   // Untouched means "as saved". Starting both at false meant a returning user
   // editing their weight silently revoked the transfer consent they had given.
@@ -21,6 +33,8 @@ export default function ConsentStep() {
   const transfer = transferChoice ?? saved?.cross_border_transfer ?? false
 
   async function accept() {
+    // Never relies on the redirect above having fired first.
+    if (unanswered) return
     // Two separate records, because they are two separate permissions. Bundling
     // them would make the second one unrefusable in practice.
     await setConsent.mutateAsync({ kind: 'processing', granted: true })
@@ -41,7 +55,7 @@ export default function ConsentStep() {
       footer={
         <Button
           label={t('consent.accept')}
-          disabled={!processing}
+          disabled={!processing || unanswered}
           loading={saveProfile.isPending}
           onPress={accept}
         />
