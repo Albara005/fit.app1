@@ -104,7 +104,7 @@ Built with the dataviz skill; one chart today, `components/TrendChart.tsx`, in b
 
 - **Form: emphasis.** The line the coach decided from in the brand hue, the raw weigh-ins as gray context. Two layers, so a legend (keys drawn like their marks) even though it is one measure.
 - **The line is passed in, never fitted in the chart.** The weekly review draws `weeklyLine` (its least-squares fit); the phase review draws `phaseLine` (first-window mean to last-window mean — the comparison its verdict uses). Each review's number is derived from its line, and tests pin the two together. A chart that fits its own line can show a trend the coach did not act on.
-- **Same slice as the decision:** 14 readings for the weekly review, 60 for the phase, matching what each one reads.
+- **Same slice as the decision, by construction:** each review query returns the readings it computed from (14 for the week, 60 for the phase), and the chart draws those — not a second fetch that could land at a different moment.
 - **Marks:** 2px round line; 8px dots with a 2px surface ring; hairline solid gridlines in `line`; text only in text tokens, never the data colour.
 - **Interaction:** press or drag snaps a crosshair to the nearest reading. The readout always shows a value (the latest until one is chosen), and a table view lists every reading, so nothing is reachable only by hovering.
 - **Direction:** time runs with reading direction — oldest on the right in Arabic, like every other progress mark here. SVG text uses `textAnchor="middle"` only: `start`/`end` follow the text direction (under `dir="rtl"` a start-anchored tick label grew into the plot), and native SVG does not inherit that direction at all.
@@ -131,7 +131,7 @@ A field's hint or error is tied to its input with `aria-describedby` (react-nati
 - Emoji as icons.
 - Raw exercise or allergen IDs reaching the screen — always resolve to the localised name.
 - Eastern Arabic digits anywhere.
-- A numeric range or signed value next to Arabic text without `ltr()` — an en dash or a leading minus reorders under RTL.
+- A numeric range or signed value built in code and shown next to Arabic text without `ltr()` — an en dash or a leading minus reorders under RTL. (Ranges written in Arabic copy are isolated by `translate()`.)
 - "N + plural" Arabic counts: one and two have their own forms («يوم واحد», «يومين»).
 - A placeholder standing in for a label, or one that looks like an entered value.
 - `fontWeight` on a weight-specific family; `letterSpacing` / `textTransform` on Arabic.

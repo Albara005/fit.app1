@@ -40,7 +40,7 @@ There is no lint script. Running vitest directly skips the edge sync, and `tests
 - `patterns.ts`, `substitute.ts`: an injury blocks whole movement patterns (a pattern → injury map, so the user is told why); substitution is deterministic by primary-muscle overlap and drops the slot rather than train the wrong muscle.
 - `tests/nutrition/dishes-gate.test.ts` holds each dish's hand-written `contains` list to what the gate finds in that dish.
 
-**Reviews and charts.** Each review's reported change is derived from the line it decides on: `weeklyLine` (least-squares fit over the last 14 weigh-ins) and `phaseLine` (mean of the first window → mean of the last, over 60). `components/TrendChart.tsx` draws that same line over the same slice and never fits its own. Adding a weight invalidates both cached reviews, and the weekly review computes only after the weight entered on its first step is saved.
+**Reviews and charts.** Each review's reported change is derived from the line it decides on: `weeklyLine` (least-squares fit over the last 14 weigh-ins) and `phaseLine` (mean of the first window → mean of the last, over 60). The review queries return the readings they computed from (`WithReadings` in `lib/data/queries.ts`), and `components/TrendChart.tsx` draws the line over exactly those — never a second fetch, never a fit of its own. Adding a weight resets both cached reviews (reset, not invalidate: an invalidated review stays on screen, Apply live, while it refetches), and the weekly review computes only after the weight entered on its first step is saved.
 
 **Data.** `lib/data/repo.ts` is the interface; `local.ts` (browser storage, keys prefixed `peak:`) and `supabase.ts` are the drivers, chosen once by `isSupabaseConfigured()`. Screens use the TanStack hooks in `lib/data/queries.ts`. The Supabase driver persists its session through `expo-secure-store`, never AsyncStorage.
 
@@ -65,7 +65,7 @@ There is no lint script. Running vitest directly skips the edge sync, and `tests
 
 ## Language
 
-Arabic is the first language, not a translation. All copy lives in `locales/ar.json` and `locales/en.json`; `tests/i18n.test.ts` enforces identical keys and placeholders and **Western digits (0–9) everywhere**. Layout uses logical properties so it mirrors. Wrap signed numbers and numeric ranges that share a line with Arabic in `ltr()` from `lib/i18n` — a leading minus or an en dash reorders otherwise. Arabic counts are not "N + plural": one and two have their own forms («يوم واحد», «يومين»). The voice is a warm Gulf coach: one sentence, not a list.
+Arabic is the first language, not a translation. All copy lives in `locales/ar.json` and `locales/en.json`; `tests/i18n.test.ts` enforces identical keys and placeholders and **Western digits (0–9) everywhere**. Layout uses logical properties so it mirrors. A leading minus or an en dash reorders inside Arabic text: `translate()` isolates numeric ranges in Arabic copy automatically, and values built in code go through `ltr()` from `lib/i18n` (`formatRange` already does). Arabic counts are not "N + plural": one and two have their own forms («يوم واحد», «يومين»). The voice is a warm Gulf coach: one sentence, not a list.
 
 ## The owner's rules
 
