@@ -39,7 +39,7 @@ export const INJURY_LABELS: Record<InjuryId, { ar: string; en: string }> = {
 
 /**
  * Maps every blocked pattern to the injury that blocks it. A map rather than a
- * set because the user is owed the reason: "بدّلت السكوات لأن ظهرك".
+ * set because the user is owed the reason: "بدلت السكوات لأن ظهرك".
  */
 export function blockedPatterns(
   injuries: readonly InjuryId[],

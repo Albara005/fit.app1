@@ -9,8 +9,10 @@
  */
 
 const AR_LETTER = 'ء-ي'
-const AR_DIACRITIC = /[ً-ٰٟۖ-ۭ]/g
-const TATWEEL = /ـ/g
+// Escaped, not literal: combining marks are invisible in source, and an editor
+// or a copy can drop one without anyone seeing the regex change.
+const AR_DIACRITIC = /[\u064B-\u065F\u0670\u06D6-\u06ED]/g
+const TATWEEL = /\u0640/g
 const ARABIC_INDIC = /[٠-٩۰-۹]/g
 
 /** Arabic clitics that may attach before a noun: و ف ب ل ك and the article ال. */
