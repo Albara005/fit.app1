@@ -46,13 +46,6 @@ export interface WeeklyReview {
 }
 
 /**
- * Least-squares fit over the week's weigh-ins, returned as the change across
- * the whole span. Two things this gets right that the obvious version does not:
- * a first-to-last subtraction reads a single day's water weight as progress,
- * and scaling a per-reading slope by 7 assumes daily weigh-ins that nobody
- * actually does.
- */
-/**
  * The least-squares line through the readings, by reading order. Exported so
  * the chart draws the very line this review decides from — a chart fitted
  * separately could show a trend the coach did not act on.
@@ -81,6 +74,13 @@ export function weeklyLine(weights: readonly number[]): TrendLine | null {
   return { from: { at: 0, kg: fit.intercept }, to: { at: last, kg: fit.intercept + fit.slope * last } }
 }
 
+/**
+ * Least-squares fit over the week's weigh-ins, returned as the change across
+ * the whole span. Two things this gets right that the obvious version does not:
+ * a first-to-last subtraction reads a single day's water weight as progress,
+ * and scaling a per-reading slope by 7 assumes daily weigh-ins that nobody
+ * actually does.
+ */
 export function weightTrend(weights: readonly number[]): number | null {
   const line = weeklyLine(weights)
   return line === null ? null : line.to.kg - line.from.kg
@@ -175,7 +175,14 @@ function buildCards(
             ar: `كمّلت ${done} من تمارين الأسبوع. ما عندي وزنات كافية أحسب عليها اتجاه — سجّل وزنك ثلاث مرات الأسبوع الجاي.`,
             en: `You finished ${done} of the week's sessions. Not enough weigh-ins to read a trend — log three next week.`,
           }
-        : {
+        : kg === 0
+          ? {
+              // A trend that rounds to nothing was announced as "rose by 0 kg" —
+              // a sentence no coach says.
+              ar: `كمّلت ${done} من تمارين الأسبوع، ووزنك ثابت.`,
+              en: `You finished ${done} of the week's sessions, and your weight held steady.`,
+            }
+          : {
             ar: `كمّلت ${done} من تمارين الأسبوع، ووزنك ${trend! < 0 ? 'نزل' : 'طلع'} ${kg} كجم.`,
             en: `You finished ${done} of the week's sessions, and your weight ${trend! < 0 ? 'fell' : 'rose'} by ${kg} kg.`,
           },

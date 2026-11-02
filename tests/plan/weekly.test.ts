@@ -71,6 +71,14 @@ describe('weekly review', () => {
     expect(r.cards[1]!.body.ar).toContain('4')
   })
 
+  it('says a weight that did not move held steady, not that it rose by 0 kg', () => {
+    const r = reviewWeek(makeProfile(), log({ weightsKg: [78, 78, 78, 78, 78] }))
+    expect(r.weeklyChangeKg).toBe(0)
+    expect(r.cards[0]!.body.ar).toContain('ووزنك ثابت')
+    expect(r.cards[0]!.body.en).toContain('held steady')
+    expect(r.cards[0]!.body.ar).not.toContain('0 كجم')
+  })
+
   it('counts two days in the dual, not as "2 أيام"', () => {
     const r = reviewWeek(makeProfile({ daysPerWeek: 3 }), log({ sessionsCompleted: 0 }))
     expect(r.nextProfile.daysPerWeek).toBe(2)
