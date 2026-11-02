@@ -9,6 +9,7 @@ import { makeStyles, useTheme } from '../lib/design/theme'
 import { layout, radius, space, touch } from '../lib/design/tokens'
 import { type } from '../lib/design/typography'
 import { useT } from '../lib/i18n/useT'
+import { useSingleFlight } from '../lib/singleFlight'
 import { Icon, type IconName } from './Icon'
 
 /**
@@ -299,11 +300,16 @@ const useBadgeStyles = makeStyles((p) => ({
 
 // ── Actions ─────────────────────────────────────────────────────────────────
 
+/**
+ * An async `onPress` runs once at a time: a second tap while it is pending does
+ * nothing, and the button shows its spinner until it settles. Screens do not
+ * guard their own submits.
+ */
 export function Button({
   label, onPress, variant = 'primary', icon, disabled, loading, style, hint,
 }: {
   label: string
-  onPress?: () => void
+  onPress?: () => unknown
   variant?: 'primary' | 'secondary' | 'quiet' | 'danger'
   icon?: IconName
   disabled?: boolean
@@ -314,19 +320,22 @@ export function Button({
 }) {
   const s = useButtonStyles()
   const { p } = useTheme()
-  const inert = disabled || loading
+  const join = useJoin()
+  const [running, run] = useSingleFlight()
+  const busy = loading || running
+  const inert = disabled || busy
   const ink =
     variant === 'primary' ? p.onPrimary : variant === 'danger' ? p.danger : variant === 'quiet' ? p.accent : p.text
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={hint}
+      // Folded into the label: react-native-web drops accessibilityHint.
+      accessibilityLabel={join(label, hint)}
       aria-disabled={!!inert}
-      aria-busy={!!loading}
+      aria-busy={busy}
       disabled={inert}
-      onPress={onPress}
+      onPress={onPress ? () => run(onPress) : undefined}
       style={({ pressed }) => [
         s.button,
         s[variant],
@@ -335,7 +344,7 @@ export function Button({
         style,
       ]}
     >
-      {loading ? (
+      {busy ? (
         <ActivityIndicator color={ink} />
       ) : (
         <View style={base.row}>

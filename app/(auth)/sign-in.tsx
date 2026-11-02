@@ -1,11 +1,12 @@
 import { router } from 'expo-router'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Wordmark } from '../../components/Brand'
 import { Body, Button, Field, Screen, Spacer, Title } from '../../components/ui'
 import { isCodeShaped, isEmailShaped } from '../../lib/auth/credentials'
 import { requestCode, verifyCode } from '../../lib/auth/session'
 import { space } from '../../lib/design/tokens'
 import { useT } from '../../lib/i18n/useT'
+import { useSingleFlight } from '../../lib/singleFlight'
 
 type Stage = 'email' | 'code'
 
@@ -14,21 +15,17 @@ export default function SignIn() {
   const [stage, setStage] = useState<Stage>('email')
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
-  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // A ref, not the busy state: two Enter presses land before a re-render, and
-  // each would send its own request — the second verify failing on a code the
-  // first already used.
-  const inFlight = useRef(false)
+  // One guard for the buttons and the keyboard's Enter alike: two presses land
+  // before a re-render, and the second verify would fail on a code the first
+  // already used.
+  const [busy, once] = useSingleFlight()
 
   async function send() {
-    if (inFlight.current) return
     if (!isEmailShaped(email)) {
       setError(t('auth.invalidEmail'))
       return
     }
-    inFlight.current = true
-    setBusy(true)
     setError(null)
     try {
       await requestCode(email.trim())
@@ -37,20 +34,14 @@ export default function SignIn() {
       // Distinct from a verify failure: at this stage there is no code yet, so
       // telling someone to check theirs is advice they cannot act on.
       setError(t('auth.sendFailed'))
-    } finally {
-      inFlight.current = false
-      setBusy(false)
     }
   }
 
   async function verify() {
-    if (inFlight.current) return
     if (!isCodeShaped(code)) {
       setError(t('auth.invalidCode'))
       return
     }
-    inFlight.current = true
-    setBusy(true)
     setError(null)
     try {
       await verifyCode(email.trim(), code.trim())
@@ -59,9 +50,6 @@ export default function SignIn() {
       router.replace('/')
     } catch {
       setError(t('auth.failed'))
-    } finally {
-      inFlight.current = false
-      setBusy(false)
     }
   }
 
@@ -69,11 +57,11 @@ export default function SignIn() {
     <Screen
       footer={
         stage === 'email' ? (
-          <Button label={t('auth.sendCode')} loading={busy} onPress={send} />
+          <Button label={t('auth.sendCode')} loading={busy} onPress={() => once(send)} />
         ) : (
           <>
-            <Button label={t('auth.verify')} loading={busy} onPress={verify} />
-            <Button label={t('auth.resend')} variant="quiet" disabled={busy} onPress={send} />
+            <Button label={t('auth.verify')} loading={busy} onPress={() => once(verify)} />
+            <Button label={t('auth.resend')} variant="quiet" disabled={busy} onPress={() => once(send)} />
           </>
         )
       }
@@ -100,7 +88,7 @@ export default function SignIn() {
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="send"
-          onSubmitEditing={send}
+          onSubmitEditing={() => once(send)}
         />
       ) : (
         <>
@@ -115,7 +103,7 @@ export default function SignIn() {
             textContentType="oneTimeCode"
             maxLength={6}
             returnKeyType="done"
-            onSubmitEditing={verify}
+            onSubmitEditing={() => once(verify)}
             autoFocus
           />
           <Button
