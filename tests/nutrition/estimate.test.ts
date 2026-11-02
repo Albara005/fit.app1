@@ -64,7 +64,7 @@ describe('estimateMeal', () => {
   })
 
   it('formats with Western digits and an en dash', () => {
-    expect(formatRange({ min: 420, max: 560 }, 'سعرة')).toBe('420–560 سعرة')
+    expect(formatRange({ min: 420, max: 560 }, 'سعرة')).toBe('\u2066420–560\u2069 سعرة')
   })
 })
 
@@ -108,6 +108,13 @@ describe('formatRange', () => {
   })
 
   it('keeps a real range as a range', () => {
-    expect(formatRange({ min: 229, max: 274 }, 'سعرة')).toBe('229–274 سعرة')
+    expect(formatRange({ min: 229, max: 274 }, 'سعرة')).toBe('\u2066229–274\u2069 سعرة')
+  })
+
+  it('isolates a range so Arabic text around it cannot reverse it', () => {
+    // Without the isolate, the en dash splits the numbers into two runs and an
+    // RTL line draws them max-first. A single number needs no isolate.
+    expect(formatRange({ min: 229, max: 274 })).toMatch(/^\u2066229–274\u2069$/)
+    expect(formatRange({ min: 42, max: 42 }, 'g')).toBe('42 g')
   })
 })

@@ -1,3 +1,4 @@
+import { ltr } from '../i18n'
 import type { CookMethod, MacroRange, MealEstimate, PortionSize } from '../types'
 
 export type EstimateSource = 'photo' | 'label' | 'barcode' | 'library' | 'memory'
@@ -98,7 +99,13 @@ export function midpoint(r: MacroRange): number {
  * rule. A range whose ends meet is printed as one number: "0–0 g" of carbs in a
  * chicken breast is technically a range and reads like a rendering bug.
  */
+/**
+ * A range is isolated as one left-to-right run. The en dash, unlike a hyphen,
+ * does not hold two numbers together under the bidi algorithm: inside Arabic
+ * text "229–274 سعرة" rendered as 274–229, while the same range alone on the
+ * Meals card rendered 229–274.
+ */
 export function formatRange(r: MacroRange, unit = ''): string {
-  const value = r.min === r.max ? `${r.min}` : `${r.min}–${r.max}`
+  const value = r.min === r.max ? `${r.min}` : ltr(`${r.min}–${r.max}`)
   return unit ? `${value} ${unit}` : value
 }
