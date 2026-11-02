@@ -127,7 +127,13 @@ export function useAddWeight() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (entry: WeightEntry) => repo().addWeight(entry),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.weights }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.weights })
+      // Both reviews are computed from the weigh-ins, but their keys do not
+      // name them — a new reading left a cached review standing on old data.
+      void qc.invalidateQueries({ queryKey: ['weeklyReview'] })
+      void qc.invalidateQueries({ queryKey: ['phaseReview'] })
+    },
   })
 }
 

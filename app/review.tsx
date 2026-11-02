@@ -23,9 +23,12 @@ export default function Review() {
   const addWeight = useAddWeight()
   const saveProfile = useSaveProfile()
   const generate = useGeneratePlan()
-  const review = useWeeklyReview(profile)
-  const [weight, setWeight] = useState(profile?.weightKg ?? 80)
   const [logged, setLogged] = useState(false)
+  // Not computed until the weight entered on the first step is saved. Computed
+  // on mount, the review ran without it and never ran again: it reported a
+  // trend from every reading except the one this loop asks for.
+  const review = useWeeklyReview(logged ? profile : null)
+  const [weight, setWeight] = useState(profile?.weightKg ?? 80)
 
   if (!profile) {
     return (
@@ -41,8 +44,9 @@ export default function Review() {
         footer={
           <Button
             label={t('common.next')}
-            onPress={() => {
-              addWeight.mutate({ day: today(), weightKg: weight })
+            loading={addWeight.isPending}
+            onPress={async () => {
+              await addWeight.mutateAsync({ day: today(), weightKg: weight })
               setLogged(true)
             }}
           />
