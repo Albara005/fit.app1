@@ -25,7 +25,9 @@
     "hour": "ساعة",
     "second": "ثانية",
     "year": "سنة",
-    "cm": "سم"
+    "cm": "سم",
+    "increase": "زيادة {{label}}",
+    "decrease": "إنقاص {{label}}"
   },
   "onboarding": {
     "welcomeTitle": "فِت ما يعطيك خطة ويمشي",
@@ -87,7 +89,15 @@
     "blockedBody": "خطط السعرات والحمل مو مناسبة لمن هم دون 18 سنة. هذا حد ما نتجاوزه.",
     "underweightTitle": "التنشيف مو الخيار المناسب لك الحين",
     "underweightBody": "وزنك تحت المدى الصحي لطولك. أقدر أبني لك خطة تثبيت أو زيادة بدل التنشيف.",
-    "underweightCta": "ابنِ لي خطة زيادة"
+    "underweightCta": "ابنِ لي خطة زيادة",
+    "loopDaily": "تفقّد يومي",
+    "loopDailyTime": "10 ثوانٍ",
+    "loopWeekly": "مراجعة أسبوعية",
+    "loopWeeklyTime": "دقيقتان",
+    "loopPhase": "مراجعة المرحلة",
+    "loopPhaseTime": "كل 6–8 أسابيع",
+    "step": "الخطوة {{current}} من {{total}}",
+    "answerToContinue": "جاوب عشان نكمل — حتى لو الجواب «ما فيه»."
   },
   "consent": {
     "title": "قبل ما نكمل",
@@ -122,7 +132,9 @@
     "sorenessLow": "ما فيه ألم",
     "sorenessHigh": "ألم واضح",
     "stressLow": "مرتاح",
-    "stressHigh": "مضغوط"
+    "stressHigh": "مضغوط",
+    "weekProgress": "{{done}} من {{target}} هذا الأسبوع",
+    "session": "تمرين اليوم"
   },
   "workout": {
     "title": "التمرين",
@@ -131,8 +143,12 @@
     "restNow": "راحة {{seconds}} ثانية",
     "skip": "تخطّى",
     "finish": "خلصت التمرين",
-    "finished": "خلّصت. تسجّل في نجمتك الشمالية.",
-    "rpe": "شدة {{value}}/10"
+    "finished": "خلّصت. انحسب لك تمرين هذا الأسبوع.",
+    "rpe": "شدة {{value}}/10",
+    "rpeLabel": "الشدة من 10",
+    "undo": "تراجع",
+    "undoHint": "يرجّع آخر مجموعة سجّلتها",
+    "setsDone": "{{done}} من {{total}} مجموعة"
   },
   "meals": {
     "title": "الوجبات",
@@ -181,7 +197,10 @@
     "scanFailed": "ما لقينا المنتج. اكتب القيم من الملصق.",
     "scanInvalid": "الباركود ما انقرأ صح. جرّب مرة ثانية.",
     "inconsistent": "الأرقام ما تجمع مع السعرات المكتوبة. تأكد منها — نحفظها زي ما كتبتها.",
-    "fillFields": "أكمل الحقول الناقصة."
+    "fillFields": "أكمل الحقول الناقصة.",
+    "progressLabel": "سعرات اليوم مقابل الهدف",
+    "correctLabel": "السعرات الفعلية",
+    "enterNumber": "اكتب رقماً"
   },
   "plan": {
     "title": "الخطة",
@@ -204,7 +223,8 @@
     "start": "ابدأ المراجعة",
     "apply": "اعتمد خطة الأسبوع الجاي",
     "notYet": "المراجعة تفتح آخر الأسبوع",
-    "adherence": "الالتزام"
+    "adherence": "الالتزام",
+    "change": "التغيّر هذا الأسبوع"
   },
   "profile": {
     "title": "حسابي",
@@ -213,7 +233,12 @@
     "lock": "قفل التطبيق",
     "lockBody": "يقفل التطبيق على هذا الجهاز فقط.",
     "signOut": "تسجيل الخروج",
-    "northStar": "تمارينك هذا الأسبوع"
+    "northStar": "تمارينك هذا الأسبوع",
+    "settings": "الإعدادات",
+    "theme": "المظهر",
+    "themeSystem": "حسب الجهاز",
+    "themeLight": "فاتح",
+    "themeDark": "داكن"
   },
   "privacy": {
     "title": "الخصوصية والبيانات",

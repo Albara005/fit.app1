@@ -1,19 +1,18 @@
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { router } from 'expo-router'
 import { useRef, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
-import { Body, Button, Card, Input, Row, Screen, SectionTitle, Small, Spacer, Title } from '../../components/ui'
+import { View } from 'react-native'
+import { Body, Button, Caption, Card, Field, Row, Screen, Section, Title } from '../../components/ui'
 import { useAddMeal } from '../../lib/data/queries'
 import { newId } from '../../lib/data/repo'
+import { makeStyles } from '../../lib/design/theme'
+import { radius, space } from '../../lib/design/tokens'
 import { useT } from '../../lib/i18n/useT'
 import { estimateMeal } from '../../lib/nutrition/estimate'
 import { lookupBarcode } from '../../lib/nutrition/foodDb'
-import {
-  EMPTY_LABEL, macrosForServing, validateLabel, type LabelDraft,
-} from '../../lib/nutrition/label'
-import { colors, space } from '../../lib/theme'
+import { EMPTY_LABEL, macrosForServing, validateLabel, type LabelDraft } from '../../lib/nutrition/label'
 
-type Field = Exclude<keyof LabelDraft, never>
+type FieldKey = keyof LabelDraft
 
 /**
  * The cheapest and most accurate way to log a packaged food, and it calls no
@@ -23,6 +22,7 @@ type Field = Exclude<keyof LabelDraft, never>
  */
 export default function Label() {
   const { t } = useT()
+  const s = useStyles()
   const [draft, setDraft] = useState<LabelDraft>(EMPTY_LABEL)
   const [name, setName] = useState('')
   const [showErrors, setShowErrors] = useState(false)
@@ -36,8 +36,11 @@ export default function Label() {
   const addMeal = useAddMeal()
 
   const validation = validateLabel(draft)
-  const set = (field: Field) => (value: string) => setDraft((d) => ({ ...d, [field]: value }))
-  const invalid = (field: Field) => showErrors && validation.invalid.includes(field)
+  const set = (field: FieldKey) => (value: string) => setDraft((d) => ({ ...d, [field]: value }))
+  // Marked only after a failed save, and on the field itself — four identical
+  // boxes with one error at the bottom leaves the user guessing which.
+  const errorFor = (field: FieldKey) =>
+    showErrors && validation.invalid.includes(field) ? t('meals.enterNumber') : null
 
   async function onScan(code: string) {
     if (handled.current) return
@@ -45,8 +48,7 @@ export default function Label() {
     setScanning(false)
     const product = await lookupBarcode(code)
     if (!product) {
-      // Not an error state: the label fields are right there, already focused
-      // on the work the user came to do.
+      // Not an error state: the label fields are right there.
       setNotice(t('meals.scanFailed'))
       return
     }
@@ -88,16 +90,27 @@ export default function Label() {
       >
         <View style={s.frame}>
           <CameraView
-            style={s.camera}
+            style={{ flex: 1 }}
             facing="back"
             barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }}
             onBarcodeScanned={({ data }) => void onScan(data)}
           />
         </View>
-        <Small style={s.hint}>{t('meals.scanning')}</Small>
+        <Caption style={{ alignSelf: 'center' }}>{t('meals.scanning')}</Caption>
       </Screen>
     )
   }
+
+  const numeric = (field: Exclude<FieldKey, 'grams'>, labelKey: string) => (
+    <Field
+      label={t(labelKey)}
+      value={draft[field]}
+      onChangeText={set(field)}
+      inputMode="decimal"
+      error={errorFor(field)}
+      style={{ flex: 1 }}
+    />
+  )
 
   return (
     <Screen
@@ -106,6 +119,7 @@ export default function Label() {
           <Button label={t('common.save')} onPress={save} />
           <Button
             label={t('meals.scan')}
+            icon="barcode"
             variant="secondary"
             onPress={async () => {
               if (!permission?.granted && !(await requestPermission()).granted) return
@@ -118,66 +132,46 @@ export default function Label() {
       }
     >
       <Title>{t('meals.labelTitle')}</Title>
-      <Body>{t('meals.labelIntro')}</Body>
+      <Body muted>{t('meals.labelIntro')}</Body>
 
       {notice ? (
-        <Card>
-          <Small>{notice}</Small>
+        <Card tone="raised">
+          <Body>{notice}</Body>
         </Card>
       ) : null}
 
-      <Spacer size={space.xs} />
-      <Input value={name} onChangeText={setName} placeholder={t('meals.productName')} />
+      <Field label={t('meals.productName')} value={name} onChangeText={setName} />
 
-      <SectionTitle>{t('meals.per100g')}</SectionTitle>
-      <Row>
-        <Input
-          value={draft.kcal} onChangeText={set('kcal')} inputMode="decimal"
-          placeholder={t('meals.kcalField')} invalid={invalid('kcal')} style={s.grow}
-        />
-        <Input
-          value={draft.protein} onChangeText={set('protein')} inputMode="decimal"
-          placeholder={t('meals.proteinField')} invalid={invalid('protein')} style={s.grow}
-        />
-      </Row>
-      <Row>
-        <Input
-          value={draft.carbs} onChangeText={set('carbs')} inputMode="decimal"
-          placeholder={t('meals.carbsField')} invalid={invalid('carbs')} style={s.grow}
-        />
-        <Input
-          value={draft.fat} onChangeText={set('fat')} inputMode="decimal"
-          placeholder={t('meals.fatField')} invalid={invalid('fat')} style={s.grow}
-        />
-      </Row>
+      <Section title={t('meals.per100g')}>
+        <Row style={{ alignItems: 'flex-start', gap: space.md }}>
+          {numeric('kcal', 'meals.kcalField')}
+          {numeric('protein', 'meals.proteinField')}
+        </Row>
+        <Row style={{ alignItems: 'flex-start', gap: space.md }}>
+          {numeric('carbs', 'meals.carbsField')}
+          {numeric('fat', 'meals.fatField')}
+        </Row>
+      </Section>
 
-      <SectionTitle>{t('meals.gramsField')}</SectionTitle>
-      <Input
-        value={draft.grams} onChangeText={set('grams')} inputMode="decimal"
-        placeholder="45" invalid={invalid('grams')}
+      <Field
+        label={t('meals.gramsField')}
+        value={draft.grams}
+        onChangeText={set('grams')}
+        inputMode="decimal"
+        error={errorFor('grams')}
       />
-
-      {showErrors && validation.invalid.length > 0 ? (
-        <Card tone="danger">
-          <Small>{t('meals.fillFields')}</Small>
-        </Card>
-      ) : null}
 
       {/* A warning, not a block: panels round, and fibre is counted differently
           across jurisdictions, so the user's reading wins. */}
       {validation.inconsistent ? (
-        <Card>
-          <Small style={s.warn}>{t('meals.inconsistent')}</Small>
+        <Card tone="warn">
+          <Body>{t('meals.inconsistent')}</Body>
         </Card>
       ) : null}
     </Screen>
   )
 }
 
-const s = StyleSheet.create({
-  grow: { flex: 1 },
-  frame: { flex: 1, borderRadius: 20, overflow: 'hidden', backgroundColor: colors.surface },
-  camera: { flex: 1 },
-  hint: { alignSelf: 'center', marginTop: space.sm },
-  warn: { color: colors.warn },
-})
+const useStyles = makeStyles((p) => ({
+  frame: { flex: 1, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: p.surface },
+}))

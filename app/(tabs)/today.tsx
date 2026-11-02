@@ -1,18 +1,26 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { View } from 'react-native'
+import { Icon } from '../../components/Icon'
 import {
-  Body, Button, Card, CoachNote, Divider, Row, Scale, Screen, SectionTitle,
-  Small, Spacer, Stat, Stepper, Title,
+  Body, Button, Caption, Card, CoachLine, Divider, Heading, Meter, Row, Scale, Screen, Section,
+  Stepper, Title,
 } from '../../components/ui'
 import {
   useAdaptedDay, useCheckIn, usePlan, useSaveCheckIn, useSessionsThisWeek, useTodayDay,
 } from '../../lib/data/queries'
 import { today } from '../../lib/data/repo'
+import { makeStyles, useTheme } from '../../lib/design/theme'
+import { space } from '../../lib/design/tokens'
 import { useT } from '../../lib/i18n/useT'
-import { colors, radius, space, type } from '../../lib/theme'
+import { exerciseById } from '../../lib/plan/exercises'
 import type { CheckIn } from '../../lib/types'
 
+/**
+ * Loop one. Ten seconds in — every answer pre-filled with an ordinary day, so
+ * an ordinary day is one tap — and one adjusted session out, with the single
+ * sentence that says why it changed.
+ */
 function CheckInForm({ onDone }: { onDone: (checkIn: CheckIn) => void }) {
   const { t } = useT()
   const [sleepHours, setSleep] = useState(7)
@@ -26,65 +34,66 @@ function CheckInForm({ onDone }: { onDone: (checkIn: CheckIn) => void }) {
       footer={
         <Button
           label={t('today.submit')}
-          onPress={() =>
-            onDone({ date: today(), sleepHours, energy, soreness, stress, minutesAvailable })
-          }
+          onPress={() => onDone({ date: today(), sleepHours, energy, soreness, stress, minutesAvailable })}
         />
       }
     >
       <Title>{t('today.checkInTitle')}</Title>
-      <Body>{t('today.checkInBody')}</Body>
-      <Spacer size={space.sm} />
+      <Body muted>{t('today.checkInBody')}</Body>
 
-      <SectionTitle>{t('today.sleep')}</SectionTitle>
-      <Stepper
-        value={sleepHours}
-        onChange={setSleep}
-        min={0}
-        max={14}
-        step={0.5}
-        suffix={t('common.hour')}
-      />
-
-      <SectionTitle>{t('today.energy')}</SectionTitle>
-      <Scale
-        value={energy}
-        onChange={(v) => setEnergy(v as CheckIn['energy'])}
-        lowLabel={t('today.energyLow')}
-        highLabel={t('today.energyHigh')}
-      />
-
-      <SectionTitle>{t('today.soreness')}</SectionTitle>
-      <Scale
-        value={soreness}
-        onChange={(v) => setSoreness(v as CheckIn['soreness'])}
-        lowLabel={t('today.sorenessLow')}
-        highLabel={t('today.sorenessHigh')}
-      />
-
-      <SectionTitle>{t('today.stress')}</SectionTitle>
-      <Scale
-        value={stress}
-        onChange={(v) => setStress(v as CheckIn['stress'])}
-        lowLabel={t('today.stressLow')}
-        highLabel={t('today.stressHigh')}
-      />
-
-      <SectionTitle>{t('today.time')}</SectionTitle>
-      <Stepper
-        value={minutesAvailable}
-        onChange={setMinutes}
-        min={10}
-        max={180}
-        step={5}
-        suffix={t('common.minute')}
-      />
+      <Section title={t('today.sleep')}>
+        <Stepper label={t('today.sleep')} value={sleepHours} onChange={setSleep} min={0} max={14} step={0.5} unit={t('common.hour')} />
+      </Section>
+      <Section title={t('today.energy')}>
+        <Scale
+          label={t('today.energy')}
+          value={energy}
+          onChange={(v) => setEnergy(v as CheckIn['energy'])}
+          low={t('today.energyLow')}
+          high={t('today.energyHigh')}
+        />
+      </Section>
+      <Section title={t('today.soreness')}>
+        <Scale
+          label={t('today.soreness')}
+          value={soreness}
+          onChange={(v) => setSoreness(v as CheckIn['soreness'])}
+          low={t('today.sorenessLow')}
+          high={t('today.sorenessHigh')}
+        />
+      </Section>
+      <Section title={t('today.stress')}>
+        <Scale
+          label={t('today.stress')}
+          value={stress}
+          onChange={(v) => setStress(v as CheckIn['stress'])}
+          low={t('today.stressLow')}
+          high={t('today.stressHigh')}
+        />
+      </Section>
+      <Section title={t('today.time')}>
+        <Stepper label={t('today.time')} value={minutesAvailable} onChange={setMinutes} min={10} max={180} step={5} unit={t('common.minute')} />
+      </Section>
     </Screen>
+  )
+}
+
+/** The week's count against the user's own target — the number this product is judged on. */
+function WeekProgress({ done, target }: { done: number; target: number }) {
+  const { t } = useT()
+  const label = t('today.weekProgress', { done, target })
+  return (
+    <View style={{ gap: space.xs }}>
+      <Caption strong>{label}</Caption>
+      <Meter value={done} max={target} label={label} />
+    </View>
   )
 }
 
 export default function Today() {
   const { t, locale } = useT()
+  const { p } = useTheme()
+  const s = useStyles()
   const { data: plan } = usePlan()
   const { data: checkIn } = useCheckIn()
   const { data: sessions } = useSessionsThisWeek()
@@ -96,8 +105,7 @@ export default function Today() {
 
   if (!plan) {
     return (
-      <Screen footer={<Button label={t('today.noPlanCta')} onPress={() => router.push('/(onboarding)/generating')} />}>
-        <Spacer size={space.xxl} />
+      <Screen center footer={<Button label={t('today.noPlanCta')} onPress={() => router.push('/(onboarding)/generating')} />}>
         <Title>{t('today.noPlan')}</Title>
       </Screen>
     )
@@ -110,8 +118,9 @@ export default function Today() {
   if (!adaptation || !day) {
     return (
       <Screen>
+        <WeekProgress done={completed} target={plan.days.length} />
         <Title>{t('today.restDay')}</Title>
-        <Body>{t('today.restBody')}</Body>
+        <CoachLine>{t('today.restBody')}</CoachLine>
       </Screen>
     )
   }
@@ -127,64 +136,70 @@ export default function Today() {
         />
       }
     >
-      <Row style={s.northStar}>
-        <Stat label={t('profile.northStar')} value={completed} />
-        <View style={s.grow} />
-        <Small>{t('today.estMinutes', { minutes: session.estMinutes })}</Small>
-      </Row>
+      <WeekProgress done={completed} target={plan.days.length} />
 
       {/* The sentence is the product. The adjusted session on its own reads as
           the app being arbitrary. */}
-      <Card tone="accent">
-        <Small style={s.whyLabel}>{t('today.whyChanged')}</Small>
-        <CoachNote>{adaptation.line[locale]}</CoachNote>
-      </Card>
+      <CoachLine label={t('today.whyChanged')}>{adaptation.line[locale]}</CoachLine>
 
-      <SectionTitle>{session.title[locale]}</SectionTitle>
-      <Card>
-        {session.exercises.map((exercise, i) => (
-          <View key={exercise.id}>
-            {i > 0 ? <Divider /> : null}
-            <View style={s.exercise}>
-              <View style={s.grow}>
-                <Text style={s.exerciseName}>{exercise.name[locale]}</Text>
-                <Small>
-                  {exercise.sets} × {exercise.reps} · {t('common.rest')} {exercise.restSec}{' '}
-                  {t('common.second')} · {t('workout.rpe', { value: exercise.rpe })}
-                </Small>
-                {exercise.substitutedFor ? (
-                  <Small style={s.swap}>
-                    {t('today.swapped', {
-                      from: exercise.substitutedFor.id,
-                      to: exercise.name[locale],
-                      reason: t('safety.reasonInjury', {
-                        injury: t(`injury.${exercise.substitutedFor.injury}`),
-                      }),
-                    })}
-                  </Small>
-                ) : null}
+      <Section
+        title={session.title[locale]}
+        action={
+          <Row style={s.minutes}>
+            <Icon name="clock" color={p.textMuted} size={18} />
+            <Caption>{t('today.estMinutes', { minutes: session.estMinutes })}</Caption>
+          </Row>
+        }
+      >
+        <Card>
+          {session.exercises.map((exercise, i) => {
+            // Resolved to a name: the record carries an id, and an id is not
+            // something to show anyone — let alone in the one sentence that
+            // explains a change made for their safety.
+            const swappedFrom = exercise.substitutedFor
+              ? (exerciseById(exercise.substitutedFor.id)?.name[locale] ?? null)
+              : null
+            return (
+              <View key={exercise.id}>
+                {i > 0 ? <Divider /> : null}
+                <View style={s.exercise}>
+                  <Heading>{exercise.name[locale]}</Heading>
+                  <Caption>
+                    {exercise.sets} × {exercise.reps} · {t('common.rest')} {exercise.restSec} {t('common.second')} ·{' '}
+                    {t('workout.rpe', { value: exercise.rpe })}
+                  </Caption>
+                  {exercise.substitutedFor ? (
+                    <Row style={s.swap}>
+                      <Icon name="swap" color={p.warn} size={18} />
+                      <Caption style={s.swapText}>
+                        {/* If the original cannot be named, the generic line still
+                            says a swap happened and why — a safety note is never
+                            dropped for want of a name. */}
+                        {swappedFrom
+                          ? t('today.swapped', {
+                              from: swappedFrom,
+                              to: exercise.name[locale],
+                              reason: t('safety.reasonInjury', {
+                                injury: t(`injury.${exercise.substitutedFor.injury}`),
+                              }),
+                            })
+                          : t('safety.substituted', { injury: t(`injury.${exercise.substitutedFor.injury}`) })}
+                      </Caption>
+                    </Row>
+                  ) : null}
+                </View>
               </View>
-              <View style={s.badge}>
-                <Text style={s.badgeText}>{exercise.sets}</Text>
-              </View>
-            </View>
-          </View>
-        ))}
-      </Card>
+            )
+          })}
+        </Card>
+      </Section>
     </Screen>
   )
 }
 
-const s = StyleSheet.create({
-  northStar: { alignItems: 'flex-end' },
-  grow: { flex: 1 },
-  whyLabel: { color: colors.limeDim, textTransform: 'uppercase', letterSpacing: 1 },
-  exercise: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.xs },
-  exerciseName: { ...type.body, fontWeight: '700', color: colors.text },
-  swap: { color: colors.warn, marginTop: 2 },
-  badge: {
-    width: 34, height: 34, borderRadius: radius.sm,
-    backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center',
-  },
-  badgeText: { ...type.small, fontWeight: '700', color: colors.lime },
-})
+const useStyles = makeStyles((p) => ({
+  minutes: { gap: space.xs },
+  exercise: { gap: 2, paddingVertical: space.xs },
+  swap: { alignItems: 'flex-start', marginTop: space.xs },
+  swapText: { color: p.warn, flex: 1 },
+}))

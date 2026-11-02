@@ -1,15 +1,16 @@
 import { router } from 'expo-router'
 import { useEffect } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { View } from 'react-native'
 import {
-  Body, Button, Card, CoachNote, Divider, Row, Screen, SectionTitle, Small, Spacer, Stat, Title,
+  Badge, Body, Button, Caption, Card, CoachLine, Divider, Grow, Heading, Row, Screen, Section, Stat, Title,
 } from '../../components/ui'
 import { usePlan } from '../../lib/data/queries'
+import { space } from '../../lib/design/tokens'
+import { useT } from '../../lib/i18n/useT'
 import { MIN_PHASE_WEEKS } from '../../lib/plan/phase'
 import { useSettings } from '../../lib/store/settings'
-import { useT } from '../../lib/i18n/useT'
-import { colors, radius, space, type } from '../../lib/theme'
 
+/** The week as built, and the door into loop two. */
 export default function PlanTab() {
   const { t, locale } = useT()
   const { data: plan } = usePlan()
@@ -21,13 +22,14 @@ export default function PlanTab() {
 
   if (!plan) {
     return (
-      <Screen>
+      <Screen center>
         <Title>{t('today.noPlan')}</Title>
       </Screen>
     )
   }
 
   const { nutrition } = plan
+  const week = plan.weekIndex + 1
 
   return (
     <Screen
@@ -36,90 +38,77 @@ export default function PlanTab() {
           <Button label={t('review.start')} onPress={() => router.push('/review')} />
           {/* Shown from the sixth week, which is when it has something to say.
               The screen still refuses to decide early if it is opened sooner. */}
-          {plan.weekIndex + 1 >= MIN_PHASE_WEEKS ? (
+          {week >= MIN_PHASE_WEEKS ? (
             <Button label={t('phase.open')} variant="secondary" onPress={() => router.push('/phase')} />
           ) : (
-            <Small style={s.hint}>{t('phase.weeksIn', { weeks: plan.weekIndex + 1 })}</Small>
+            <Caption style={{ alignSelf: 'center' }}>{t('phase.weeksIn', { weeks: week })}</Caption>
           )}
         </>
       }
     >
       <Row>
-        <Title style={s.grow}>{t('plan.week', { index: plan.weekIndex + 1 })}</Title>
-        <View style={s.source}>
-          <Small style={s.sourceText}>{t(`plan.source.${plan.source}`)}</Small>
-        </View>
+        <Title>{t('plan.week', { index: week })}</Title>
+        <Grow />
+        <Badge label={t(`plan.source.${plan.source}`)} tone={plan.source === 'model' ? 'accent' : 'default'} />
       </Row>
 
-      <CoachNote>{plan.rationale[locale]}</CoachNote>
-      {plan.source === 'template' ? <Small>{t('plan.sourceTemplateBody')}</Small> : null}
+      <CoachLine>{plan.rationale[locale]}</CoachLine>
+      {plan.source === 'template' ? <Caption>{t('plan.sourceTemplateBody')}</Caption> : null}
 
-      <SectionTitle>{t('plan.nutrition')}</SectionTitle>
-      <Card>
-        <Row>
+      <Section title={t('plan.nutrition')}>
+        <Card>
           <Stat label={t('common.kcal')} value={nutrition.kcal} />
-          <View style={s.grow} />
-          <Stat label={t('plan.protein')} value={nutrition.protein} unit={t('common.gram')} />
-          <View style={s.grow} />
-          <Stat label={t('plan.carbs')} value={nutrition.carbs} unit={t('common.gram')} />
-          <View style={s.grow} />
-          <Stat label={t('plan.fat')} value={nutrition.fat} unit={t('common.gram')} />
-        </Row>
-      </Card>
-
-      <SectionTitle>{t('plan.training')}</SectionTitle>
-      {plan.days.map((day) => (
-        <Card key={day.id}>
-          <Row>
-            <Text style={[s.dayTitle, s.grow]}>{day.title[locale]}</Text>
-            <Small>{t('today.estMinutes', { minutes: day.estMinutes })}</Small>
+          <Divider />
+          <Row style={{ gap: space.lg }}>
+            <View style={{ flex: 1 }}>
+              <Stat size="small" label={t('plan.protein')} value={nutrition.protein} unit={t('common.gram')} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Stat size="small" label={t('plan.carbs')} value={nutrition.carbs} unit={t('common.gram')} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Stat size="small" label={t('plan.fat')} value={nutrition.fat} unit={t('common.gram')} />
+            </View>
           </Row>
-          <Divider />
-          {day.exercises.map((exercise) => (
-            <Row key={exercise.id} style={s.exercise}>
-              <Body muted={false} style={s.grow}>
-                {exercise.name[locale]}
-              </Body>
-              <Small>
-                {exercise.sets} × {exercise.reps}
-              </Small>
-            </Row>
-          ))}
         </Card>
-      ))}
+      </Section>
 
-      <SectionTitle>{t('meals.title')}</SectionTitle>
-      {plan.meals.map((meal) => (
-        <Card key={meal.id}>
-          <Text style={s.dayTitle}>{meal.title[locale]}</Text>
-          <Divider />
-          {meal.items.map((item, i) => (
-            <Row key={`${meal.id}-${i}`} style={s.exercise}>
-              <Body muted={false} style={s.grow}>
-                {item.name[locale]}
-              </Body>
-              <Small>
-                {item.grams} {t('common.gram')} · {item.kcal} {t('common.kcal')}
-              </Small>
+      <Section title={t('plan.training')}>
+        {plan.days.map((day) => (
+          <Card key={day.id}>
+            <Row>
+              <Heading style={{ flex: 1 }}>{day.title[locale]}</Heading>
+              <Caption>{t('today.estMinutes', { minutes: day.estMinutes })}</Caption>
             </Row>
-          ))}
-        </Card>
-      ))}
-      <Spacer size={space.md} />
+            <Divider />
+            {day.exercises.map((exercise) => (
+              <Row key={exercise.id}>
+                <Body style={{ flex: 1 }}>{exercise.name[locale]}</Body>
+                <Caption>
+                  {exercise.sets} × {exercise.reps}
+                </Caption>
+              </Row>
+            ))}
+          </Card>
+        ))}
+      </Section>
+
+      <Section title={t('meals.title')}>
+        {plan.meals.map((meal) => (
+          <Card key={meal.id}>
+            <Heading>{meal.title[locale]}</Heading>
+            <Divider />
+            {meal.items.map((item, i) => (
+              <Row key={`${meal.id}-${i}`}>
+                <Body style={{ flex: 1 }}>{item.name[locale]}</Body>
+                <Caption>
+                  {item.grams} {t('common.gram')} · {item.kcal} {t('common.kcal')}
+                </Caption>
+              </Row>
+            ))}
+          </Card>
+        ))}
+      </Section>
     </Screen>
   )
 }
-
-const s = StyleSheet.create({
-  grow: { flex: 1 },
-  source: {
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceAlt,
-  },
-  sourceText: { color: colors.sand },
-  hint: { alignSelf: 'center' },
-  dayTitle: { ...type.heading, color: colors.text },
-  exercise: { paddingVertical: 3 },
-})

@@ -1,14 +1,13 @@
 import { Tabs } from 'expo-router'
 import { StyleSheet, Text } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TabIcon, type TabName } from '../../components/TabIcon'
 import { usePlan } from '../../lib/data/queries'
+import { useTheme } from '../../lib/design/theme'
+import { space } from '../../lib/design/tokens'
+import { type } from '../../lib/design/typography'
 import { useT } from '../../lib/i18n/useT'
 import { useSettings } from '../../lib/store/settings'
-import { colors, space, type } from '../../lib/theme'
-
-function Label({ children, focused }: { children: string; focused: boolean }) {
-  return <Text style={[s.label, focused && s.labelOn]}>{children}</Text>
-}
 
 const TABS: { name: TabName; titleKey: string }[] = [
   { name: 'today', titleKey: 'today.title' },
@@ -17,26 +16,39 @@ const TABS: { name: TabName; titleKey: string }[] = [
   { name: 'profile', titleKey: 'profile.title' },
 ]
 
+/** Room for a 24px glyph and one line of caption, above whatever the device reserves. */
+const BAR = 60
+
 export default function TabsLayout() {
   const { t } = useT()
+  const { p } = useTheme()
+  const insets = useSafeAreaInsets()
   const { data: plan } = usePlan()
   const lastSeenPlanWeek = useSettings((state) => state.lastSeenPlanWeek)
 
   // Generation is a job the user can walk away from, so something has to tell
   // them it finished. A dot on the tab does that without a notifications
-  // permission prompt, and without a library this project has not approved.
+  // permission prompt.
   const unseenPlan = plan !== null && plan !== undefined && plan.weekIndex > lastSeenPlanWeek
 
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.bg },
-        headerTintColor: colors.text,
+        headerStyle: { backgroundColor: p.bg },
+        headerTintColor: p.text,
         headerShadowVisible: false,
-        headerTitleStyle: { fontWeight: '700' },
-        sceneStyle: { backgroundColor: colors.bg },
-        tabBarStyle: s.bar,
-        tabBarItemStyle: { paddingVertical: space.xs },
+        headerTitleStyle: { fontFamily: type.heading.fontFamily, fontSize: type.heading.fontSize },
+        sceneStyle: { backgroundColor: p.bg },
+        tabBarStyle: {
+          backgroundColor: p.surface,
+          borderTopColor: p.line,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          // A fixed height squeezed the icons into whatever the home indicator
+          // left over. The inset is added, not absorbed.
+          height: BAR + insets.bottom,
+          paddingBottom: insets.bottom,
+          paddingTop: space.xs,
+        },
       }}
     >
       {TABS.map((tab) => (
@@ -48,22 +60,12 @@ export default function TabsLayout() {
             tabBarIcon: ({ focused }) => (
               <TabIcon name={tab.name} focused={focused} badge={tab.name === 'plan' && unseenPlan} />
             ),
-            tabBarLabel: ({ focused }) => <Label focused={focused}>{t(tab.titleKey)}</Label>,
+            tabBarLabel: ({ focused }) => (
+              <Text style={[type.caption, { color: focused ? p.accent : p.textMuted }]}>{t(tab.titleKey)}</Text>
+            ),
           }}
         />
       ))}
     </Tabs>
   )
 }
-
-const s = StyleSheet.create({
-  bar: {
-    backgroundColor: colors.surface,
-    borderTopColor: colors.line,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    height: 64,
-    paddingTop: space.xs,
-  },
-  label: { ...type.micro, color: colors.textMute },
-  labelOn: { color: colors.lime },
-})

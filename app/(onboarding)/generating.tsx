@@ -1,11 +1,12 @@
 import { router } from 'expo-router'
 import { useEffect, useRef } from 'react'
-import { ActivityIndicator, StyleSheet, View } from 'react-native'
-import { Body, Button, Card, Screen, Small, Spacer, Title } from '../../components/ui'
+import { ActivityIndicator, View } from 'react-native'
+import { Body, Button, Caption, Card, CoachLine, Screen, Title } from '../../components/ui'
 import { useDerivedProfile, useGeneratePlan, useSaveProfile } from '../../lib/data/queries'
-import { requestPermission } from '../../lib/notifications'
+import { useTheme } from '../../lib/design/theme'
+import { space } from '../../lib/design/tokens'
 import { useT } from '../../lib/i18n/useT'
-import { colors, space } from '../../lib/theme'
+import { requestPermission } from '../../lib/notifications'
 
 /**
  * Generation runs as a job the user can walk away from. There is no blocking
@@ -14,6 +15,7 @@ import { colors, space } from '../../lib/theme'
  */
 export default function Generating() {
   const { t, locale } = useT()
+  const { p } = useTheme()
   const profile = useDerivedProfile()
   const generate = useGeneratePlan()
   const saveProfile = useSaveProfile()
@@ -29,8 +31,7 @@ export default function Generating() {
 
   if (outcome?.verdict === 'BLOCK_ACCOUNT') {
     return (
-      <Screen>
-        <Spacer size={space.xxl} />
+      <Screen center>
         <Card tone="danger">
           <Title>{t('onboarding.blockedTitle')}</Title>
           <Body>{t('onboarding.blockedBody')}</Body>
@@ -42,6 +43,7 @@ export default function Generating() {
   if (outcome?.verdict === 'OFFER_ALTERNATIVE' && profile) {
     return (
       <Screen
+        center
         footer={
           <Button
             label={t('onboarding.underweightCta')}
@@ -55,32 +57,25 @@ export default function Generating() {
           />
         }
       >
-        <Spacer size={space.xxl} />
-        <Card tone="accent">
-          <Title>{t('onboarding.underweightTitle')}</Title>
-          <Body>{t('onboarding.underweightBody')}</Body>
-        </Card>
+        <Title>{t('onboarding.underweightTitle')}</Title>
+        <CoachLine>{t('onboarding.underweightBody')}</CoachLine>
       </Screen>
     )
   }
 
   if (outcome?.plan) {
     return (
-      <Screen footer={<Button label={t('common.start')} onPress={() => router.replace('/(tabs)/today')} />}>
-        <Spacer size={space.xxl} />
+      <Screen center footer={<Button label={t('common.start')} onPress={() => router.replace('/(tabs)/today')} />}>
         <Title>{t('plan.week', { index: 1 })}</Title>
-        <Body>{outcome.plan.rationale[locale]}</Body>
-        {outcome.fellBack ? (
-          <Card>
-            <Small>{t('safety.templateFallback')}</Small>
-          </Card>
-        ) : null}
+        <CoachLine>{outcome.plan.rationale[locale]}</CoachLine>
+        {outcome.fellBack ? <Caption>{t('safety.templateFallback')}</Caption> : null}
       </Screen>
     )
   }
 
   return (
     <Screen
+      center
       footer={
         <Button
           label={t('onboarding.generatingLeave')}
@@ -96,16 +91,11 @@ export default function Generating() {
         />
       }
     >
-      <View style={s.center}>
-        <ActivityIndicator color={colors.lime} size="large" />
-        <Spacer size={space.lg} />
+      <View style={{ alignItems: 'center', gap: space.md }}>
+        <ActivityIndicator color={p.accent} size="large" />
         <Title>{t('onboarding.generatingTitle')}</Title>
-        <Body>{t('onboarding.generatingBody')}</Body>
+        <Body muted>{t('onboarding.generatingBody')}</Body>
       </View>
     </Screen>
   )
 }
-
-const s = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.xs },
-})

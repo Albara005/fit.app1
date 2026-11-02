@@ -1,35 +1,10 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Body, Button, Card, Screen, Small, Spacer, Title } from '../../components/ui'
-import { Steps } from '../../components/Steps'
+import { StepProgress } from '../../components/StepProgress'
+import { Body, Button, Choice, Screen, Title } from '../../components/ui'
 import { useConsents, useSaveProfile, useSetConsent } from '../../lib/data/queries'
 import { useT } from '../../lib/i18n/useT'
 import { useOnboarding } from '../../lib/store/onboarding'
-import { colors, radius, space, type } from '../../lib/theme'
-
-function Check({
-  checked, onToggle, title, body,
-}: {
-  checked: boolean
-  onToggle: () => void
-  title: string
-  body: string
-}) {
-  return (
-    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked }} onPress={onToggle}>
-      <Card tone={checked ? 'accent' : 'default'}>
-        <View style={s.row}>
-          <View style={[s.box, checked && s.boxOn]}>
-            {checked ? <Text style={s.tick}>✓</Text> : null}
-          </View>
-          <Text style={s.title}>{title}</Text>
-        </View>
-        <Small style={s.body}>{body}</Small>
-      </Card>
-    </Pressable>
-  )
-}
 
 export default function ConsentStep() {
   const { t, locale } = useT()
@@ -37,6 +12,7 @@ export default function ConsentStep() {
   const { data: saved } = useConsents()
   const saveProfile = useSaveProfile()
   const setConsent = useSetConsent()
+
   // Untouched means "as saved". Starting both at false meant a returning user
   // editing their weight silently revoked the transfer consent they had given.
   const [processingChoice, setProcessing] = useState<boolean | null>(null)
@@ -71,40 +47,26 @@ export default function ConsentStep() {
         />
       }
     >
-      <Steps current={7} total={8} />
+      <StepProgress step={7} />
       <Title>{t('consent.title')}</Title>
-      <Body>{t('consent.intro')}</Body>
-      <Spacer size={space.sm} />
+      <Body muted>{t('consent.intro')}</Body>
 
-      <Check
-        checked={processing}
-        onToggle={() => setProcessing(!processing)}
-        title={t('consent.processing')}
-        body={t('consent.processingBody')}
+      <Choice
+        mode="multi"
+        label={t('consent.processing')}
+        description={t('consent.processingBody')}
+        selected={processing}
+        onPress={() => setProcessing(!processing)}
       />
-      <Check
-        checked={transfer}
-        onToggle={() => setTransfer(!transfer)}
-        title={t('consent.transfer')}
-        body={t('consent.transferBody')}
+      <Choice
+        mode="multi"
+        label={t('consent.transfer')}
+        description={t('consent.transferBody')}
+        selected={transfer}
+        onPress={() => setTransfer(!transfer)}
       />
 
-      <Pressable onPress={() => router.push('/privacy')}>
-        <Small style={s.link}>{t('consent.readPolicy')}</Small>
-      </Pressable>
+      <Button label={t('consent.readPolicy')} variant="quiet" onPress={() => router.push('/privacy')} />
     </Screen>
   )
 }
-
-const s = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  box: {
-    width: 24, height: 24, borderRadius: radius.sm,
-    borderWidth: 2, borderColor: colors.line, alignItems: 'center', justifyContent: 'center',
-  },
-  boxOn: { backgroundColor: colors.lime, borderColor: colors.lime },
-  tick: { color: colors.bg, fontWeight: '900', fontSize: 14 },
-  title: { ...type.body, fontWeight: '700', color: colors.text, flex: 1 },
-  body: { lineHeight: 20 },
-  link: { color: colors.lime, marginTop: space.sm, textDecorationLine: 'underline' },
-})

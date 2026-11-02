@@ -52,6 +52,7 @@ Theme follows the system by default; the user can pin light or dark in the profi
 | `display` | Noto Kufi Arabic 700 | 32 / 50 | One per screen at most |
 | `title` | Noto Kufi Arabic 700 | 24 / 38 | Screen title |
 | `heading` | Noto Kufi Arabic 700 | 18 / 30 | Section |
+| `lead` | Noto Sans Arabic 400 | 18 / 30 | The coach's one sentence — outranks body |
 | `body` | Noto Sans Arabic 400 | 16 / 26 | Everything read as prose |
 | `bodyStrong` | Noto Sans Arabic 700 | 16 / 26 | Emphasis, button labels |
 | `label` | Noto Sans Arabic 700 | 14 / 22 | Field labels, chips |
@@ -88,11 +89,19 @@ Subtle (dial 3/10). `press 120ms · state 200ms · screen 280ms`; exits run at 7
 | `Screen` | Safe areas, scroll, optional fixed footer; content never sits under the footer |
 | `Button` | `primary` · `secondary` · `quiet` · `danger`. ≥ 48 high. Pressed = opacity, never a size change |
 | `CoachLine` | The one sentence explaining today's change. The only `accentSoft` surface on a screen |
-| `Choice` | Single/multi select row. Boundary is `lineStrong`; selection is shown by fill *and* a check mark, not colour alone |
-| `Stepper` | ± with tabular numeral; long-press repeats |
+| `Choice` | Single/multi select row, announced as radio or checkbox. Boundary is `lineStrong`; selection is shown by fill *and* a check mark, not colour alone |
+| `Segmented` | 2–4 short exclusive options on one line (language, theme, cook method) |
+| `Pill` | Compact single choice among many short options (dish quick-picks); 44 drawn, 48 touchable |
+| `Stepper` | Labelled ± buttons around a tabular numeral; long-press repeats; the value is a polite live region |
 | `Field` | Visible label above, hint below, error inline under the field — never placeholder-as-label |
 | `Stat` | Numeral + unit + caption label |
 | `Icon` | Hand-drawn SVG paths on `react-native-svg`; 1.75 stroke, 24 box; decorative icons hidden from the accessibility tree |
+
+## Accessibility props
+
+State goes in `aria-*` props — `aria-checked`, `aria-disabled`, `aria-busy`, `aria-valuenow`, `aria-hidden` — never `accessibilityState` / `accessibilityValue`. React Native accepts both on iOS and Android, but react-native-web 0.21 reads only `aria-*`: with `accessibilityState` every selected option reached a browser screen reader as unselected. Native-only hiding props (`accessibilityElementsHidden`, `importantForAccessibility`) do nothing on the web either; use `aria-hidden`.
+
+A field's hint or error is tied to its input with `aria-describedby` (react-native-web drops `accessibilityHint`).
 
 ## Anti-patterns
 
@@ -101,4 +110,7 @@ Subtle (dial 3/10). `press 120ms · state 200ms · screen 280ms`; exits run at 7
 - Emoji as icons.
 - Raw exercise or allergen IDs reaching the screen — always resolve to the localised name.
 - Eastern Arabic digits anywhere.
+- A numeric range or signed value next to Arabic text without `ltr()` — an en dash or a leading minus reorders under RTL.
+- "N + plural" Arabic counts: one and two have their own forms («يوم واحد», «يومين»).
+- A placeholder standing in for a label, or one that looks like an entered value.
 - `fontWeight` on a weight-specific family; `letterSpacing` / `textTransform` on Arabic.

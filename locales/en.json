@@ -25,7 +25,9 @@
     "hour": "h",
     "second": "s",
     "year": "years",
-    "cm": "cm"
+    "cm": "cm",
+    "increase": "Increase {{label}}",
+    "decrease": "Decrease {{label}}"
   },
   "onboarding": {
     "welcomeTitle": "Peak doesn't hand you a plan and walk away",
@@ -87,7 +89,15 @@
     "blockedBody": "Calorie and load programming isn't appropriate under 18. This is a line we don't cross.",
     "underweightTitle": "A cut isn't the right call right now",
     "underweightBody": "Your weight is below the healthy range for your height. I can build you a maintenance or gaining plan instead.",
-    "underweightCta": "Build me a gaining plan"
+    "underweightCta": "Build me a gaining plan",
+    "loopDaily": "Daily check-in",
+    "loopDailyTime": "10 seconds",
+    "loopWeekly": "Weekly review",
+    "loopWeeklyTime": "2 minutes",
+    "loopPhase": "Phase review",
+    "loopPhaseTime": "Every 6–8 weeks",
+    "step": "Step {{current}} of {{total}}",
+    "answerToContinue": "Answer to continue — even if the answer is none."
   },
   "consent": {
     "title": "Before we go on",
@@ -122,7 +132,9 @@
     "sorenessLow": "None",
     "sorenessHigh": "Sore",
     "stressLow": "Calm",
-    "stressHigh": "Stressed"
+    "stressHigh": "Stressed",
+    "weekProgress": "{{done}} of {{target}} this week",
+    "session": "Today's session"
   },
   "workout": {
     "title": "Session",
@@ -131,8 +143,12 @@
     "restNow": "Rest {{seconds}}s",
     "skip": "Skip",
     "finish": "Finish session",
-    "finished": "Done. That counts toward your week.",
-    "rpe": "RPE {{value}}/10"
+    "finished": "Done. That one counts toward this week.",
+    "rpe": "RPE {{value}}/10",
+    "rpeLabel": "Effort out of 10",
+    "undo": "Undo",
+    "undoHint": "Takes back the last set you logged",
+    "setsDone": "{{done}} of {{total}} sets"
   },
   "meals": {
     "title": "Meals",
@@ -181,7 +197,10 @@
     "scanFailed": "We couldn't find that product. Type the values from the label.",
     "scanInvalid": "That barcode didn't read cleanly. Try again.",
     "inconsistent": "Those numbers don't add up to the stated calories. Check them — we'll save exactly what you typed.",
-    "fillFields": "Fill in the missing fields."
+    "fillFields": "Fill in the missing fields.",
+    "progressLabel": "Today's calories against the target",
+    "correctLabel": "Actual calories",
+    "enterNumber": "Enter a number"
   },
   "plan": {
     "title": "Plan",
@@ -204,7 +223,8 @@
     "start": "Start review",
     "apply": "Use next week's plan",
     "notYet": "The review opens at the end of the week",
-    "adherence": "Adherence"
+    "adherence": "Adherence",
+    "change": "Change this week"
   },
   "profile": {
     "title": "Account",
@@ -213,7 +233,12 @@
     "lock": "Lock the app",
     "lockBody": "Locks the app on this device only.",
     "signOut": "Sign out",
-    "northStar": "Your sessions this week"
+    "northStar": "Your sessions this week",
+    "settings": "Settings",
+    "theme": "Appearance",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark"
   },
   "privacy": {
     "title": "Privacy and data",

@@ -1,21 +1,21 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { View } from 'react-native'
 import {
-  Body, Button, Card, Divider, Row, Screen, SectionTitle, Small, Spacer,
+  Badge, Body, Button, Card, Divider, Heading, Screen, Section, SwitchRow, Wrap,
 } from '../components/ui'
-import { useConsents, useDeleteEverything, useSetConsent } from '../lib/data/queries'
 import { SUPABASE_REGION, isSupabaseConfigured } from '../lib/data'
+import { useConsents, useDeleteEverything, useSetConsent } from '../lib/data/queries'
+import type { ConsentKind } from '../lib/data/repo'
+import { space } from '../lib/design/tokens'
 import { useT } from '../lib/i18n/useT'
 import { MODEL_SAFE_KEYS } from '../lib/privacy/modelSafe'
-import { colors, radius, space, type } from '../lib/theme'
-import type { ConsentKind } from '../lib/data/repo'
 
-function Section({ title, body }: { title: string; body: string }) {
+function Block({ title, body }: { title: string; body: string }) {
   return (
-    <View style={s.section}>
-      <Text style={s.sectionTitle}>{title}</Text>
-      <Body>{body}</Body>
+    <View style={{ gap: space.xs, paddingVertical: space.xs }}>
+      <Heading>{title}</Heading>
+      <Body muted>{body}</Body>
     </View>
   )
 }
@@ -32,114 +32,81 @@ export default function Privacy() {
   const setConsent = useSetConsent()
   const deleteEverything = useDeleteEverything()
   const [confirming, setConfirming] = useState(false)
-  const [deleted, setDeleted] = useState(false)
 
   const backed = isSupabaseConfigured()
 
   return (
     <Screen>
       <Card>
-        <Section title={t('privacy.whatTitle')} body={t('privacy.whatBody')} />
+        <Block title={t('privacy.whatTitle')} body={t('privacy.whatBody')} />
         <Divider />
-        <Section
+        <Block
           title={t('privacy.whereTitle')}
           body={backed ? t('privacy.whereBody', { region: SUPABASE_REGION }) : t('privacy.whereLocal')}
         />
         <Divider />
-        <Section title={t('privacy.howLongTitle')} body={t('privacy.howLongBody')} />
+        <Block title={t('privacy.howLongTitle')} body={t('privacy.howLongBody')} />
       </Card>
 
       <Card>
-        <Section title={t('privacy.modelTitle')} body={t('privacy.modelBody')} />
-        <View style={s.fields}>
+        <Block title={t('privacy.modelTitle')} body={t('privacy.modelBody')} />
+        <Wrap>
           {MODEL_SAFE_KEYS.map((key) => (
-            <View key={key} style={s.field}>
-              <Small style={s.fieldText}>{t(`privacy.field.${key}`)}</Small>
-            </View>
+            <Badge key={key} label={t(`privacy.field.${key}`)} />
           ))}
-        </View>
+        </Wrap>
       </Card>
 
       <Card>
-        <Section title={t('privacy.photosTitle')} body={t('privacy.photosBody')} />
+        <Block title={t('privacy.photosTitle')} body={t('privacy.photosBody')} />
         <Divider />
         {/* A barcode lookup leaves the device too. Smaller than the model call,
-            and still something a page that claims to list everything has to
-            list. */}
-        <Section title={t('privacy.barcodeTitle')} body={t('privacy.barcodeBody')} />
+            and still something a page that claims to list everything has to list. */}
+        <Block title={t('privacy.barcodeTitle')} body={t('privacy.barcodeBody')} />
         <Divider />
-        <Section title={t('privacy.logsTitle')} body={t('privacy.logsBody')} />
+        <Block title={t('privacy.logsTitle')} body={t('privacy.logsBody')} />
       </Card>
 
-      <SectionTitle>{t('privacy.consentTitle')}</SectionTitle>
-      <Card>
-        {(['processing', 'cross_border_transfer'] as ConsentKind[]).map((kind, i) => {
-          const granted = consents?.[kind] ?? false
-          return (
-            <View key={kind}>
-              {i > 0 ? <Divider /> : null}
-              <Row style={s.consent}>
-                <View style={s.grow}>
-                  <Text style={s.consentTitle}>
-                    {t(kind === 'processing' ? 'consent.processing' : 'consent.transfer')}
-                  </Text>
-                  <Small style={granted ? s.granted : s.denied}>
-                    {t(granted ? 'privacy.consentGranted' : 'privacy.consentDenied')}
-                  </Small>
-                </View>
-                <Button
-                  label={t(granted ? 'privacy.revoke' : 'privacy.grant')}
-                  variant="secondary"
-                  onPress={() => setConsent.mutate({ kind, granted: !granted })}
+      <Section title={t('privacy.consentTitle')}>
+        <Card style={{ paddingVertical: space.xs }}>
+          {(['processing', 'cross_border_transfer'] as ConsentKind[]).map((kind, i) => {
+            const granted = consents?.[kind] ?? false
+            return (
+              <View key={kind}>
+                {i > 0 ? <Divider /> : null}
+                <SwitchRow
+                  label={t(kind === 'processing' ? 'consent.processing' : 'consent.transfer')}
+                  detail={t(granted ? 'privacy.consentGranted' : 'privacy.consentDenied')}
+                  value={granted}
+                  onValueChange={(next) => setConsent.mutate({ kind, granted: next })}
                 />
-              </Row>
-            </View>
-          )
-        })}
-      </Card>
+              </View>
+            )
+          })}
+        </Card>
+      </Section>
 
-      <SectionTitle>{t('privacy.deleteTitle')}</SectionTitle>
-      <Card tone="danger">
-        <Body>{t('privacy.deleteBody')}</Body>
-        {deleted ? (
-          <Body muted={false}>{t('privacy.deleteDone')}</Body>
-        ) : confirming ? (
-          <>
-            <Button
-              label={t('privacy.deleteConfirm')}
-              variant="danger"
-              loading={deleteEverything.isPending}
-              onPress={async () => {
-                await deleteEverything.mutateAsync()
-                setDeleted(true)
-                router.replace('/(onboarding)/welcome')
-              }}
-            />
-            <Button label={t('common.cancel')} variant="ghost" onPress={() => setConfirming(false)} />
-          </>
-        ) : (
-          <Button label={t('privacy.deleteTitle')} variant="danger" onPress={() => setConfirming(true)} />
-        )}
-      </Card>
-      <Spacer size={space.xl} />
+      <Section title={t('privacy.deleteTitle')}>
+        <Card tone="danger">
+          <Body>{t('privacy.deleteBody')}</Body>
+          {confirming ? (
+            <>
+              <Button
+                label={t('privacy.deleteConfirm')}
+                variant="danger"
+                loading={deleteEverything.isPending}
+                onPress={async () => {
+                  await deleteEverything.mutateAsync()
+                  router.replace('/(onboarding)/welcome')
+                }}
+              />
+              <Button label={t('common.cancel')} variant="quiet" onPress={() => setConfirming(false)} />
+            </>
+          ) : (
+            <Button label={t('privacy.deleteTitle')} variant="danger" onPress={() => setConfirming(true)} />
+          )}
+        </Card>
+      </Section>
     </Screen>
   )
 }
-
-const s = StyleSheet.create({
-  grow: { flex: 1 },
-  section: { gap: space.xs, paddingVertical: space.xs },
-  sectionTitle: { ...type.heading, color: colors.sand },
-  fields: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginTop: space.xs },
-  field: {
-    paddingHorizontal: space.md,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceAlt,
-  },
-  fieldText: { color: colors.textMute },
-  consent: { paddingVertical: space.sm },
-  consentTitle: { ...type.body, fontWeight: '700', color: colors.text },
-  granted: { color: colors.ok },
-  denied: { color: colors.textFaint },
-})

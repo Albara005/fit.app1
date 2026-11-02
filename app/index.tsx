@@ -1,8 +1,8 @@
 import { Redirect } from 'expo-router'
-import { ActivityIndicator, StyleSheet, View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 import { useSession } from '../lib/auth/session'
 import { useProfile } from '../lib/data/queries'
-import { colors } from '../lib/theme'
+import { useTheme } from '../lib/design/theme'
 
 /**
  * Signed out goes to sign-in, no profile goes to onboarding, everyone else goes
@@ -31,13 +31,10 @@ export default function Index() {
 }
 
 function Spinner() {
+  const { p } = useTheme()
   return (
-    <View style={s.center}>
-      <ActivityIndicator color={colors.lime} />
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: p.bg }}>
+      <ActivityIndicator color={p.accent} />
     </View>
   )
 }
-
-const s = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-})

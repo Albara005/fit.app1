@@ -1,9 +1,8 @@
 import { router } from 'expo-router'
-import { Body, Button, Chip, Screen, Spacer, Title, Wrap } from '../../components/ui'
-import { Steps } from '../../components/Steps'
+import { StepProgress } from '../../components/StepProgress'
+import { Body, Button, Choice, Screen, Title } from '../../components/ui'
 import { useT } from '../../lib/i18n/useT'
 import { EQUIPMENT, useOnboarding } from '../../lib/store/onboarding'
-import { space } from '../../lib/theme'
 
 const KEY: Record<string, string> = {
   none: 'None', bands: 'Bands', dumbbell: 'Dumbbell', barbell: 'Barbell',
@@ -16,20 +15,18 @@ export default function EquipmentStep() {
 
   return (
     <Screen footer={<Button label={t('common.next')} onPress={() => router.push('/(onboarding)/injuries')} />}>
-      <Steps current={4} total={8} />
+      <StepProgress step={4} />
       <Title>{t('onboarding.equipmentTitle')}</Title>
-      <Body>{t('onboarding.equipmentBody')}</Body>
-      <Spacer size={space.sm} />
-      <Wrap>
-        {EQUIPMENT.map((value) => (
-          <Chip
-            key={value}
-            label={t(`onboarding.equip${KEY[value]}`)}
-            selected={equipment.includes(value)}
-            onPress={() => toggle('equipment', value)}
-          />
-        ))}
-      </Wrap>
+      <Body muted>{t('onboarding.equipmentBody')}</Body>
+      {EQUIPMENT.map((value) => (
+        <Choice
+          key={value}
+          mode="multi"
+          label={t(`onboarding.equip${KEY[value]}`)}
+          selected={equipment.includes(value)}
+          onPress={() => toggle('equipment', value)}
+        />
+      ))}
     </Screen>
   )
 }

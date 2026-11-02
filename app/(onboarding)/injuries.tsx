@@ -1,35 +1,45 @@
 import { router } from 'expo-router'
-import { Body, Button, Chip, Screen, Spacer, Title, Wrap } from '../../components/ui'
-import { Steps } from '../../components/Steps'
+import { StepProgress } from '../../components/StepProgress'
+import { Body, Button, Caption, Choice, Screen, Title } from '../../components/ui'
 import { useT } from '../../lib/i18n/useT'
 import { INJURIES, useOnboarding } from '../../lib/store/onboarding'
-import { space } from '../../lib/theme'
 
 export default function InjuriesStep() {
   const { t } = useT()
   const { injuries, toggle, answered, declareNone } = useOnboarding()
 
   return (
-    <Screen footer={<Button label={t('common.next')} disabled={!answered.injuries} onPress={() => router.push('/(onboarding)/allergies')} />}>
-      <Steps current={5} total={8} />
-      <Title>{t('onboarding.injuriesTitle')}</Title>
-      <Body>{t('onboarding.injuriesBody')}</Body>
-      <Spacer size={space.sm} />
-      <Wrap>
-        <Chip
-          label={t('onboarding.injuriesNone')}
-          selected={answered.injuries && injuries.length === 0}
-          onPress={() => declareNone('injuries')}
-        />
-        {INJURIES.map((value) => (
-          <Chip
-            key={value}
-            label={t(`injury.${value}`)}
-            selected={injuries.includes(value)}
-            onPress={() => toggle('injuries', value)}
+    <Screen
+      footer={
+        <>
+          {/* Says why Next is waiting. A disabled button with no reason reads as broken. */}
+          {!answered.injuries ? <Caption>{t('onboarding.answerToContinue')}</Caption> : null}
+          <Button
+            label={t('common.next')}
+            disabled={!answered.injuries}
+            onPress={() => router.push('/(onboarding)/allergies')}
           />
-        ))}
-      </Wrap>
+        </>
+      }
+    >
+      <StepProgress step={5} />
+      <Title>{t('onboarding.injuriesTitle')}</Title>
+      <Body muted>{t('onboarding.injuriesBody')}</Body>
+      <Choice
+        mode="multi"
+        label={t('onboarding.injuriesNone')}
+        selected={answered.injuries && injuries.length === 0}
+        onPress={() => declareNone('injuries')}
+      />
+      {INJURIES.map((value) => (
+        <Choice
+          key={value}
+          mode="multi"
+          label={t(`injury.${value}`)}
+          selected={injuries.includes(value)}
+          onPress={() => toggle('injuries', value)}
+        />
+      ))}
     </Screen>
   )
 }

@@ -1,13 +1,10 @@
 import { router } from 'expo-router'
-import { Body, Button, Chip, Screen, Spacer, Title, Wrap } from '../../components/ui'
-import { Steps } from '../../components/Steps'
+import { StepProgress } from '../../components/StepProgress'
+import { Body, Button, Choice, Screen, Title } from '../../components/ui'
 import { useT } from '../../lib/i18n/useT'
 import { GOALS, useOnboarding } from '../../lib/store/onboarding'
-import { space } from '../../lib/theme'
 
-const LABEL: Record<string, string> = {
-  cut: 'Cut', recomp: 'Recomp', gain: 'Gain', strength: 'Strength',
-}
+const LABEL: Record<string, string> = { cut: 'Cut', recomp: 'Recomp', gain: 'Gain', strength: 'Strength' }
 
 export default function GoalStep() {
   const { t } = useT()
@@ -15,22 +12,19 @@ export default function GoalStep() {
 
   return (
     <Screen footer={<Button label={t('common.next')} onPress={() => router.push('/(onboarding)/activity')} />}>
-      <Steps current={2} total={8} />
+      <StepProgress step={2} />
       <Title>{t('onboarding.goalTitle')}</Title>
-      <Body>{t('onboarding.goalBody')}</Body>
-      <Spacer size={space.sm} />
-      <Wrap>
-        {GOALS.map((value) => (
-          <Chip
-            key={value}
-            label={t(`onboarding.goal${LABEL[value]}`)}
-            sublabel={t(`onboarding.goal${LABEL[value]}Body`)}
-            selected={goal === value}
-            wide
-            onPress={() => set('goal', value)}
-          />
-        ))}
-      </Wrap>
+      <Body muted>{t('onboarding.goalBody')}</Body>
+      {GOALS.map((value) => (
+        <Choice
+          key={value}
+          mode="single"
+          label={t(`onboarding.goal${LABEL[value]}`)}
+          description={t(`onboarding.goal${LABEL[value]}Body`)}
+          selected={goal === value}
+          onPress={() => set('goal', value)}
+        />
+      ))}
     </Screen>
   )
 }

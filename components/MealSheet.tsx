@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
-import { Body, Button, Card, Chip, Input, Row, Screen, SectionTitle, Small, Spacer, Title, Wrap } from './ui'
+import { View } from 'react-native'
 import { useAddMeal, useCorrections, useProfile } from '../lib/data/queries'
 import { newId } from '../lib/data/repo'
+import { space } from '../lib/design/tokens'
 import { useT } from '../lib/i18n/useT'
 import { DISHES } from '../lib/nutrition/dishes'
 import { estimateMeal, formatRange, type EstimateSource, type Macros } from '../lib/nutrition/estimate'
 import { dishKey, memoryLine, recall } from '../lib/nutrition/memory'
-import { colors, radius, space } from '../lib/theme'
 import type { CookMethod, PortionSize } from '../lib/types'
+import {
+  Badge, Body, Button, Caption, Card, CoachLine, Field, Grow, Pill, Row, Screen, Section, Segmented, Title, Wrap,
+} from './ui'
 
 const COOK: CookMethod[] = ['fried', 'grilled', 'boiled']
 const PORTIONS: PortionSize[] = ['half', 'normal', 'large']
@@ -25,12 +27,11 @@ export function MealSheet({ onClose }: { onClose: () => void }) {
   const [portion, setPortion] = useState<PortionSize | null>(null)
 
   // Only dishes the profile can actually eat. Offering a quick-pick that the
-  // gate would reject teaches people to distrust the whole list.
+  // gate would reject teaches people to distrust the whole list. Each dish's
+  // `contains` is held to the gate's own reading by tests/nutrition/dishes-gate.
   const quickPicks = useMemo(
     () =>
-      DISHES.filter(
-        (d) => !d.contains.some((a) => profile?.allergies.includes(a)) && d.role !== 'fat',
-      ).slice(0, 8),
+      DISHES.filter((d) => !d.contains.some((a) => profile?.allergies.includes(a)) && d.role !== 'fat').slice(0, 8),
     [profile?.allergies],
   )
 
@@ -87,24 +88,24 @@ export function MealSheet({ onClose }: { onClose: () => void }) {
               onClose()
             }}
           />
-          <Button label={t('common.cancel')} variant="ghost" onPress={onClose} />
+          <Button label={t('common.cancel')} variant="quiet" onPress={onClose} />
         </>
       }
     >
       <Title>{t('meals.addMeal')}</Title>
 
-      <Input
+      <Field
+        label={t('meals.manual')}
         value={label}
         onChangeText={(text) => {
           setLabel(text)
           setPickedId(null)
         }}
-        placeholder={t('meals.manual')}
       />
 
       <Wrap>
         {quickPicks.map((dish) => (
-          <Chip
+          <Pill
             key={dish.id}
             label={dish.name[locale]}
             selected={pickedId === dish.id}
@@ -116,62 +117,50 @@ export function MealSheet({ onClose }: { onClose: () => void }) {
         ))}
       </Wrap>
 
-      {memory ? (
-        <Card tone="accent">
-          <Small>{t('meals.remembered')}</Small>
-          <Body muted={false}>{memoryLine(finalLabel, memory, locale)}</Body>
-        </Card>
-      ) : null}
+      {memory ? <CoachLine label={t('meals.remembered')}>{memoryLine(finalLabel, memory, locale)}</CoachLine> : null}
 
       {/* The two questions that fix most of the error, asked as taps. */}
-      <SectionTitle>{t('meals.howCooked')}</SectionTitle>
-      <Row>
-        {COOK.map((value) => (
-          <Chip key={value} label={t(`meals.${value}`)} selected={cookMethod === value} onPress={() => setCook(value)} />
-        ))}
-      </Row>
-
-      <SectionTitle>{t('meals.howBig')}</SectionTitle>
-      <Row>
-        {PORTIONS.map((value) => (
-          <Chip key={value} label={t(`meals.${value}`)} selected={portion === value} onPress={() => setPortion(value)} />
-        ))}
-      </Row>
-      <Small>{t('meals.twoTaps')}</Small>
+      <Section title={t('meals.howCooked')}>
+        <Segmented
+          label={t('meals.howCooked')}
+          options={COOK.map((value) => ({ value, label: t(`meals.${value}`) }))}
+          value={cookMethod}
+          onChange={setCook}
+        />
+      </Section>
+      <Section title={t('meals.howBig')}>
+        <Segmented
+          label={t('meals.howBig')}
+          options={PORTIONS.map((value) => ({ value, label: t(`meals.${value}`) }))}
+          value={portion}
+          onChange={setPortion}
+        />
+      </Section>
+      <Caption>{t('meals.twoTaps')}</Caption>
 
       {estimate ? (
-        <>
-          <Spacer size={space.sm} />
-          <Card>
-            <Row>
-              <Body muted={false} style={s.grow}>
-                {formatRange(estimate.kcal, t('common.kcal'))}
-              </Body>
-              <View style={s.confidence}>
-                <Small style={s.confidenceText}>{confidenceLabel}</Small>
-              </View>
-            </Row>
-            <Small>
-              {t('plan.protein')} {formatRange(estimate.protein, t('common.gram'))} · {t('plan.carbs')}{' '}
-              {formatRange(estimate.carbs, t('common.gram'))} · {t('plan.fat')}{' '}
-              {formatRange(estimate.fat, t('common.gram'))}
-            </Small>
-            <Small style={s.note}>{t('meals.fatNote')}</Small>
-          </Card>
-        </>
+        <Card>
+          <Row>
+            <Body strong style={{ flex: 1 }}>
+              {formatRange(estimate.kcal, t('common.kcal'))}
+            </Body>
+            <Grow />
+            <Badge label={confidenceLabel} />
+          </Row>
+          <View style={{ gap: 2 }}>
+            <Caption>
+              {t('plan.protein')} {formatRange(estimate.protein, t('common.gram'))}
+            </Caption>
+            <Caption>
+              {t('plan.carbs')} {formatRange(estimate.carbs, t('common.gram'))}
+            </Caption>
+            <Caption>
+              {t('plan.fat')} {formatRange(estimate.fat, t('common.gram'))}
+            </Caption>
+          </View>
+          <Caption style={{ marginTop: space.xs }}>{t('meals.fatNote')}</Caption>
+        </Card>
       ) : null}
     </Screen>
   )
 }
-
-const s = StyleSheet.create({
-  grow: { flex: 1 },
-  confidence: {
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceAlt,
-  },
-  confidenceText: { color: colors.sand },
-  note: { color: colors.textFaint },
-})

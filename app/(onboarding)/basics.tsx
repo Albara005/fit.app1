@@ -1,9 +1,8 @@
 import { router } from 'expo-router'
-import { Body, Button, Chip, Row, Screen, SectionTitle, Spacer, Stepper, Title } from '../../components/ui'
-import { Steps } from '../../components/Steps'
+import { StepProgress } from '../../components/StepProgress'
+import { Body, Button, Screen, Section, Segmented, Stepper, Title } from '../../components/ui'
 import { useT } from '../../lib/i18n/useT'
 import { SEXES, useOnboarding } from '../../lib/store/onboarding'
-import { space } from '../../lib/theme'
 
 export default function Basics() {
   const { t } = useT()
@@ -11,44 +10,45 @@ export default function Basics() {
 
   return (
     <Screen footer={<Button label={t('common.next')} onPress={() => router.push('/(onboarding)/goal')} />}>
-      <Steps current={1} total={8} />
+      <StepProgress step={1} />
       <Title>{t('onboarding.basicsTitle')}</Title>
-      <Body>{t('onboarding.basicsBody')}</Body>
-      <Spacer size={space.sm} />
+      <Body muted>{t('onboarding.basicsBody')}</Body>
 
-      <SectionTitle>{t('onboarding.sex')}</SectionTitle>
-      <Row>
-        {SEXES.map((value) => (
-          <Chip
-            key={value}
-            label={t(value === 'm' ? 'onboarding.male' : 'onboarding.female')}
-            selected={sex === value}
-            onPress={() => set('sex', value)}
-          />
-        ))}
-      </Row>
-
-      <SectionTitle>{t('onboarding.age')}</SectionTitle>
-      <Stepper value={age} onChange={(v) => set('age', v)} min={18} max={90} suffix={t('common.year')} />
-
-      <SectionTitle>{t('onboarding.height')}</SectionTitle>
-      <Stepper
-        value={heightCm}
-        onChange={(v) => set('heightCm', v)}
-        min={130}
-        max={220}
-        suffix={t('common.cm')}
-      />
-
-      <SectionTitle>{t('onboarding.weight')}</SectionTitle>
-      <Stepper
-        value={weightKg}
-        onChange={(v) => set('weightKg', v)}
-        min={35}
-        max={250}
-        step={0.5}
-        suffix={t('common.kg')}
-      />
+      <Section title={t('onboarding.sex')}>
+        <Segmented
+          label={t('onboarding.sex')}
+          options={SEXES.map((value) => ({
+            value,
+            label: t(value === 'm' ? 'onboarding.male' : 'onboarding.female'),
+          }))}
+          value={sex}
+          onChange={(value) => set('sex', value)}
+        />
+      </Section>
+      <Section title={t('onboarding.age')}>
+        <Stepper label={t('onboarding.age')} value={age} onChange={(v) => set('age', v)} min={18} max={90} unit={t('common.year')} />
+      </Section>
+      <Section title={t('onboarding.height')}>
+        <Stepper
+          label={t('onboarding.height')}
+          value={heightCm}
+          onChange={(v) => set('heightCm', v)}
+          min={130}
+          max={220}
+          unit={t('common.cm')}
+        />
+      </Section>
+      <Section title={t('onboarding.weight')}>
+        <Stepper
+          label={t('onboarding.weight')}
+          value={weightKg}
+          onChange={(v) => set('weightKg', v)}
+          min={35}
+          max={250}
+          step={0.5}
+          unit={t('common.kg')}
+        />
+      </Section>
     </Screen>
   )
 }

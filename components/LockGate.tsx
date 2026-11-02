@@ -1,11 +1,11 @@
 import { type ReactNode, useCallback, useEffect, useState } from 'react'
-import { AppState, StyleSheet, View } from 'react-native'
+import { AppState, View } from 'react-native'
 import { PeakMark } from './Brand'
 import { Body, Button, Screen, Spacer, Title } from './ui'
 import { authenticate, lockAvailable } from '../lib/auth/deviceLock'
 import { useT } from '../lib/i18n/useT'
 import { useSettings } from '../lib/store/settings'
-import { space } from '../lib/theme'
+import { space } from '../lib/design/tokens'
 
 /**
  * Stands between the app and its screens while the lock is on. It renders
@@ -56,17 +56,13 @@ export function LockGate({ children }: { children: ReactNode }) {
   if (!lockEnabled || unlocked) return <>{children}</>
 
   return (
-    <Screen footer={<Button label={t('lock.unlock')} loading={asking} onPress={unlock} />}>
-      <View style={s.center}>
+    <Screen center footer={<Button label={t('lock.unlock')} icon="lock" loading={asking} onPress={unlock} />}>
+      <View style={{ alignItems: 'center', gap: space.sm }}>
         <PeakMark size={64} />
-        <Spacer size={space.lg} />
+        <Spacer size={space.sm} />
         <Title>{t('lock.title')}</Title>
-        <Body>{t('lock.body')}</Body>
+        <Body muted>{t('lock.body')}</Body>
       </View>
     </Screen>
   )
 }
-
-const s = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.xs },
-})

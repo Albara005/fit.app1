@@ -1,12 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
-import { Body, Button, Card, Meter, Row, Screen, Small, Spacer, Title } from '../../components/ui'
+import { View } from 'react-native'
+import {
+  Body, Button, Caption, Card, Display, Heading, Meter, Row, Screen, Stat, Title,
+} from '../../components/ui'
 import {
   useAdaptedDay, useCheckIn, useLogSession, usePlan, useSessionsThisWeek, useTodayDay,
 } from '../../lib/data/queries'
+import { space } from '../../lib/design/tokens'
 import { useT } from '../../lib/i18n/useT'
-import { colors, space, type } from '../../lib/theme'
+import { positionOf } from '../../lib/plan/session'
 
 /**
  * One set at a time. The whole session on a single scrollable page is a
@@ -24,95 +27,92 @@ export default function Workout() {
   const adaptation = useAdaptedDay(planned, checkIn)
   const day = adaptation?.day ?? planned
 
-  const [index, setIndex] = useState(0)
   const [setsDone, setSetsDone] = useState(0)
 
   if (!plan || !day) {
     return (
-      <Screen>
+      <Screen center>
         <Title>{t('today.noPlan')}</Title>
       </Screen>
     )
   }
 
   const totalSets = day.exercises.reduce((n, x) => n + x.sets, 0)
+  const { index, doneInExercise } = positionOf(day, setsDone)
   const exercise = day.exercises[index]
+  const progress = t('workout.setsDone', { done: setsDone, total: totalSets })
 
   const finish = () => {
     logSession.mutate({ planId: plan.id, dayId: dayId ?? day.id, setsDone })
     router.replace('/(tabs)/today')
   }
 
+  // Taking back a mis-tap. Without it, one stray press skipped a set for good.
+  const undo =
+    setsDone > 0 ? (
+      <Button
+        label={t('workout.undo')}
+        hint={t('workout.undoHint')}
+        icon="undo"
+        variant="quiet"
+        style={{ flex: 1 }}
+        onPress={() => setSetsDone(setsDone - 1)}
+      />
+    ) : null
+
   if (!exercise) {
     return (
-      <Screen footer={<Button label={t('common.done')} onPress={finish} />}>
-        <Spacer size={space.xxl} />
+      <Screen
+        center
+        footer={
+          <>
+            <Button label={t('common.done')} onPress={finish} />
+            {undo}
+          </>
+        }
+      >
         <Title>{t('workout.finished')}</Title>
-        <Body>
-          {setsDone} / {totalSets} {t('common.set')}
-        </Body>
+        <Body muted>{progress}</Body>
       </Screen>
     )
   }
 
-  const setsBefore = day.exercises.slice(0, index).reduce((n, x) => n + x.sets, 0)
-  const doneInExercise = Math.max(0, setsDone - setsBefore)
-
-  const logSet = () => {
-    setSetsDone(setsDone + 1)
-    if (doneInExercise + 1 >= exercise.sets) setIndex(index + 1)
-  }
+  const next = day.exercises[index + 1]
 
   return (
     <Screen
       footer={
         <>
-          <Button label={t('workout.logSet')} onPress={logSet} />
-          <Button label={t('workout.finish')} variant="ghost" onPress={finish} />
+          <Button label={t('workout.logSet')} onPress={() => setSetsDone(setsDone + 1)} />
+          <Row>
+            {undo}
+            <Button label={t('workout.finish')} variant="quiet" style={{ flex: 1 }} onPress={finish} />
+          </Row>
         </>
       }
     >
-      <Meter value={setsDone} max={totalSets} />
-      <Small>
-        {setsDone} / {totalSets} {t('common.set')}
-      </Small>
+      <View style={{ gap: space.xs }}>
+        <Caption strong>{progress}</Caption>
+        <Meter value={setsDone} max={totalSets} label={progress} />
+      </View>
 
-      <Spacer size={space.lg} />
-      <Card tone="accent">
-        <Small style={s.eyebrow}>{day.title[locale]}</Small>
-        <Text style={s.name}>{exercise.name[locale]}</Text>
-        <Row style={s.numbers}>
-          <View style={s.number}>
-            <Text style={s.numberValue}>{exercise.reps}</Text>
-            <Small>{t('common.rep')}</Small>
-          </View>
-          <View style={s.number}>
-            <Text style={s.numberValue}>{exercise.restSec}</Text>
-            <Small>{t('common.rest')}</Small>
-          </View>
-          <View style={s.number}>
-            <Text style={s.numberValue}>{exercise.rpe}/10</Text>
-            <Small>RPE</Small>
-          </View>
+      <Card>
+        <Caption strong>{day.title[locale]}</Caption>
+        <Display>{exercise.name[locale]}</Display>
+        <Caption strong>{t('workout.setOf', { current: doneInExercise + 1, total: exercise.sets })}</Caption>
+        <Row style={{ gap: space.xl, marginTop: space.sm, alignItems: 'flex-start' }}>
+          <Stat label={t('common.rep')} value={exercise.reps} />
+          <Stat label={t('common.rest')} value={exercise.restSec} unit={t('common.second')} />
+          <Stat label={t('workout.rpeLabel')} value={exercise.rpe} />
         </Row>
-        <Small>{t('workout.setOf', { current: doneInExercise + 1, total: exercise.sets })}</Small>
       </Card>
 
-      {day.exercises[index + 1] ? (
-        <Card>
-          <Small>{t('common.next')}</Small>
-          <Text style={s.upNext}>{day.exercises[index + 1]!.name[locale]}</Text>
+      {next ? (
+        <Card tone="raised">
+          <Caption>{t('common.next')}</Caption>
+          <Heading>{next.name[locale]}</Heading>
         </Card>
       ) : null}
     </Screen>
   )
 }
-
-const s = StyleSheet.create({
-  eyebrow: { color: colors.limeDim, letterSpacing: 1 },
-  name: { ...type.display, color: colors.text },
-  numbers: { gap: space.xl, marginTop: space.sm },
-  number: { gap: 2 },
-  numberValue: { ...type.title, color: colors.lime },
-  upNext: { ...type.body, fontWeight: '700', color: colors.text },
-})

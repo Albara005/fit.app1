@@ -1,33 +1,24 @@
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { View } from 'react-native'
 import {
-  Body, Card, Divider, Row, Screen, SectionTitle, Small, Spacer, Stat, Title,
+  Card, Divider, ListRow, Meter, Row, Screen, Section, Segmented, Stat, SwitchRow,
 } from '../../components/ui'
 import { authenticate, lockAvailable } from '../../lib/auth/deviceLock'
 import { signOut, useSession } from '../../lib/auth/session'
-import { useProfile, useSessionsThisWeek } from '../../lib/data/queries'
+import { usePlan, useProfile, useSessionsThisWeek } from '../../lib/data/queries'
+import { space } from '../../lib/design/tokens'
 import { useT } from '../../lib/i18n/useT'
 import { useOnboarding } from '../../lib/store/onboarding'
-import { useSettings } from '../../lib/store/settings'
-import { colors, radius, space, type } from '../../lib/theme'
-import type { Locale } from '../../lib/types'
-
-function LinkRow({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [s.link, pressed && s.pressed]}>
-      <Text style={s.linkText}>{label}</Text>
-      <Text style={s.chevron}>›</Text>
-    </Pressable>
-  )
-}
+import { useSettings, type ThemePreference } from '../../lib/store/settings'
 
 export default function ProfileTab() {
   const { t, locale } = useT()
   const { data: profile } = useProfile()
+  const { data: plan } = usePlan()
   const { data: sessions } = useSessionsThisWeek()
   const { data: session } = useSession()
-  const { lockEnabled, setLockEnabled, setUnlocked, setLocale } = useSettings()
+  const { lockEnabled, setLockEnabled, setUnlocked, setLocale, theme, setTheme } = useSettings()
   const [canLock, setCanLock] = useState(false)
 
   useEffect(() => {
@@ -38,131 +29,102 @@ export default function ProfileTab() {
   // without a successful authentication is how someone locks themselves out of
   // their own data on the next launch.
   async function toggleLock() {
-    if (lockEnabled) {
-      if (!(await authenticate(t('lock.prompt')))) return
-      setLockEnabled(false)
-      setUnlocked(true)
-      return
-    }
     if (!(await authenticate(t('lock.prompt')))) return
-    setLockEnabled(true)
+    setLockEnabled(!lockEnabled)
     setUnlocked(true)
   }
 
+  const done = sessions?.length ?? 0
+  const target = plan?.days.length ?? profile?.daysPerWeek ?? 3
+
   return (
     <Screen>
-      <Card tone="accent">
-        <Stat label={t('profile.northStar')} value={sessions?.length ?? 0} />
-        <Small>{t('review.adherence')}</Small>
+      <Card>
+        <Stat label={t('profile.northStar')} value={`${done} / ${target}`} />
+        <Meter value={done} max={target} label={t('today.weekProgress', { done, target })} />
       </Card>
 
       {profile ? (
         <Card>
-          <Row>
-            <Stat label={t('onboarding.weight')} value={profile.weightKg} unit={t('common.kg')} />
-            <View style={s.grow} />
-            <Stat label={t('onboarding.height')} value={profile.heightCm} unit={t('common.cm')} />
-            <View style={s.grow} />
-            <Stat label={t('onboarding.age')} value={profile.age} />
+          <Row style={{ gap: space.lg }}>
+            <View style={{ flex: 1 }}>
+              <Stat size="small" label={t('onboarding.weight')} value={profile.weightKg} unit={t('common.kg')} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Stat size="small" label={t('onboarding.height')} value={profile.heightCm} unit={t('common.cm')} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Stat size="small" label={t('onboarding.age')} value={profile.age} unit={t('common.year')} />
+            </View>
           </Row>
         </Card>
       ) : null}
 
-      <SectionTitle>{t('common.language')}</SectionTitle>
-      <Row>
-        {(['ar', 'en'] as Locale[]).map((code) => (
-          <Pressable
-            key={code}
-            accessibilityRole="button"
-            accessibilityState={{ selected: locale === code }}
-            onPress={() => setLocale(code)}
-            style={[s.lang, locale === code && s.langOn]}
-          >
-            <Text style={[s.langText, locale === code && s.langTextOn]}>
-              {code === 'ar' ? 'العربية' : 'English'}
-            </Text>
-          </Pressable>
-        ))}
-      </Row>
-
-      <SectionTitle>{t('profile.title')}</SectionTitle>
-      <Card style={s.links}>
-        <LinkRow
-          label={t('profile.edit')}
-          onPress={() => {
-            // The draft is in memory only. Without this, after a restart it holds
-            // the defaults and saving it writes allergies: [] over the real ones.
-            if (profile) useOnboarding.getState().hydrate(profile)
-            router.push('/(onboarding)/basics')
-          }}
+      <Section title={t('profile.settings')}>
+        <Segmented
+          label={t('common.language')}
+          options={[
+            { value: 'ar', label: 'العربية' },
+            { value: 'en', label: 'English' },
+          ]}
+          value={locale}
+          onChange={setLocale}
         />
-        <Divider />
-        <LinkRow label={t('profile.privacy')} onPress={() => router.push('/privacy')} />
-        {session?.userId ? (
-          <>
-            <Divider />
-            <LinkRow
-              label={t('profile.signOut')}
-              onPress={async () => {
-                await signOut()
-                router.replace('/')
-              }}
-            />
-          </>
-        ) : null}
-        {/* Hidden where the platform cannot honour it. A switch that stores a
-            boolean and locks nothing is worse than no switch. */}
-        {canLock ? (
-          <>
-            <Divider />
-            <Pressable
-              accessibilityRole="switch"
-              accessibilityState={{ checked: lockEnabled }}
-              onPress={toggleLock}
-              style={s.link}
-            >
-              <View style={s.grow}>
-                <Text style={s.linkText}>{t('profile.lock')}</Text>
-                {/* Says what it does and no more: a device lock is not
-                    encryption of the rows on the server, and claiming
-                    otherwise would be a lie a user might rely on. */}
-                <Small>{t('profile.lockBody')}</Small>
-              </View>
-              <View style={[s.toggle, lockEnabled && s.toggleOn]}>
-                <View style={[s.knob, lockEnabled && s.knobOn]} />
-              </View>
-            </Pressable>
-          </>
-        ) : null}
-      </Card>
-      <Spacer size={space.md} />
+        <Segmented<ThemePreference>
+          label={t('profile.theme')}
+          options={[
+            { value: 'system', label: t('profile.themeSystem') },
+            { value: 'light', label: t('profile.themeLight') },
+            { value: 'dark', label: t('profile.themeDark') },
+          ]}
+          value={theme}
+          onChange={setTheme}
+        />
+      </Section>
+
+      <Section title={t('profile.title')}>
+        <Card style={{ paddingVertical: space.xs }}>
+          <ListRow
+            label={t('profile.edit')}
+            onPress={() => {
+              // The draft is in memory only. Without this, after a restart it holds
+              // the defaults and saving it writes allergies: [] over the real ones.
+              if (profile) useOnboarding.getState().hydrate(profile)
+              router.push('/(onboarding)/basics')
+            }}
+          />
+          <Divider />
+          <ListRow label={t('profile.privacy')} onPress={() => router.push('/privacy')} />
+          {/* Hidden where the platform cannot honour it. A switch that stores a
+              boolean and locks nothing is worse than no switch. It also says
+              what it does and no more: a device lock is not encryption of the
+              rows on the server, and claiming otherwise would be a lie a user
+              might rely on. */}
+          {canLock ? (
+            <>
+              <Divider />
+              <SwitchRow
+                label={t('profile.lock')}
+                detail={t('profile.lockBody')}
+                value={lockEnabled}
+                onValueChange={() => void toggleLock()}
+              />
+            </>
+          ) : null}
+          {session?.userId ? (
+            <>
+              <Divider />
+              <ListRow
+                label={t('profile.signOut')}
+                onPress={async () => {
+                  await signOut()
+                  router.replace('/')
+                }}
+              />
+            </>
+          ) : null}
+        </Card>
+      </Section>
     </Screen>
   )
 }
-
-const s = StyleSheet.create({
-  grow: { flex: 1 },
-  links: { paddingVertical: space.xs },
-  link: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
-  pressed: { opacity: 0.6 },
-  linkText: { ...type.body, color: colors.text, flexShrink: 1 },
-  chevron: { ...type.title, color: colors.textFaint, marginStart: 'auto' },
-  lang: {
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.surface,
-  },
-  langOn: { borderColor: colors.lime, backgroundColor: colors.limeSoft },
-  langText: { ...type.body, color: colors.textMute },
-  langTextOn: { color: colors.lime, fontWeight: '700' },
-  toggle: {
-    width: 48, height: 28, borderRadius: radius.pill,
-    backgroundColor: colors.surfaceAlt, padding: 3, justifyContent: 'center',
-  },
-  toggleOn: { backgroundColor: colors.lime },
-  knob: { width: 22, height: 22, borderRadius: radius.pill, backgroundColor: colors.textFaint },
-  knobOn: { backgroundColor: colors.bg, alignSelf: 'flex-end' },
-})

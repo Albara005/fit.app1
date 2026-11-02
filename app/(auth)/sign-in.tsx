@@ -1,12 +1,11 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { StyleSheet, View } from 'react-native'
 import { Wordmark } from '../../components/Brand'
-import { Body, Button, Card, Input, Screen, Small, Spacer, Title } from '../../components/ui'
+import { Body, Button, Field, Screen, Spacer, Title } from '../../components/ui'
 import { isCodeShaped, isEmailShaped } from '../../lib/auth/credentials'
 import { requestCode, verifyCode } from '../../lib/auth/session'
+import { space } from '../../lib/design/tokens'
 import { useT } from '../../lib/i18n/useT'
-import { colors, space } from '../../lib/theme'
 
 type Stage = 'email' | 'code'
 
@@ -64,50 +63,62 @@ export default function SignIn() {
         ) : (
           <>
             <Button label={t('auth.verify')} loading={busy} onPress={verify} />
-            <Button
-              label={t('auth.changeEmail')}
-              variant="ghost"
-              onPress={() => {
-                setStage('email')
-                setCode('')
-                setError(null)
-              }}
-            />
+            <Button label={t('auth.resend')} variant="quiet" onPress={send} />
           </>
         )
       }
     >
-      <Spacer size={space.xl} />
+      <Spacer size={space.lg} />
       <Wordmark size={44} />
-      <Spacer size={space.xl} />
+      <Spacer size={space.lg} />
       <Title>{t('auth.title')}</Title>
-      <Body>{t('auth.intro')}</Body>
+      <Body muted>{t('auth.intro')}</Body>
       <Spacer size={space.sm} />
 
+      {/* Autocomplete hints let the platform fill the address and lift the
+          code straight out of the email — the whole sign-in can be two taps. */}
       {stage === 'email' ? (
-        <Input
+        <Field
+          label={t('auth.email')}
           value={email}
           onChangeText={setEmail}
-          placeholder={t('auth.email')}
-          inputMode="text"
+          error={error}
+          inputMode="email"
+          keyboardType="email-address"
+          autoComplete="email"
+          textContentType="emailAddress"
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="send"
+          onSubmitEditing={send}
         />
       ) : (
-        <View style={s.stack}>
-          <Small>{t('auth.codeSent', { email: email.trim() })}</Small>
-          <Input value={code} onChangeText={setCode} placeholder={t('auth.code')} inputMode="numeric" />
-          <Button label={t('auth.resend')} variant="ghost" onPress={send} />
-        </View>
+        <>
+          <Field
+            label={t('auth.code')}
+            hint={t('auth.codeSent', { email: email.trim() })}
+            value={code}
+            onChangeText={setCode}
+            error={error}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+            maxLength={6}
+            returnKeyType="done"
+            onSubmitEditing={verify}
+            autoFocus
+          />
+          <Button
+            label={t('auth.changeEmail')}
+            variant="quiet"
+            onPress={() => {
+              setStage('email')
+              setCode('')
+              setError(null)
+            }}
+          />
+        </>
       )}
-
-      {error ? (
-        <Card tone="danger">
-          <Body muted={false}>{error}</Body>
-        </Card>
-      ) : null}
     </Screen>
   )
 }
-
-const s = StyleSheet.create({
-  stack: { gap: space.sm },
-})

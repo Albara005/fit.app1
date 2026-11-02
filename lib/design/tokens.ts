@@ -117,17 +117,23 @@ export const fonts = {
  * near 1.6 rather than the 1.4 a Latin-only scale would use; tighter and Kufi
  * clips its own descenders.
  */
+// Asserted separately: inside `as const` the array would be readonly, which
+// React Native's style types refuse.
+const TABULAR = ['tabular-nums'] as Array<'tabular-nums'>
+
 export const type = {
   display: { fontFamily: fonts.display, fontSize: 32, lineHeight: 50 },
   title: { fontFamily: fonts.display, fontSize: 24, lineHeight: 38 },
   heading: { fontFamily: fonts.display, fontSize: 18, lineHeight: 30 },
+  /** The coach's one sentence. It is the product, so it outranks body text. */
+  lead: { fontFamily: fonts.body, fontSize: 18, lineHeight: 30 },
   body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 26 },
   bodyStrong: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 26 },
   label: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 22 },
   caption: { fontFamily: fonts.body, fontSize: 13, lineHeight: 20 },
   /** Tabular figures: a stepper going 9 → 10 must not shift its own label. */
-  numeral: { fontFamily: fonts.bodyBold, fontSize: 28, lineHeight: 36, fontVariant: ['tabular-nums'] },
-  numeralSmall: { fontFamily: fonts.bodyBold, fontSize: 18, lineHeight: 26, fontVariant: ['tabular-nums'] },
+  numeral: { fontFamily: fonts.bodyBold, fontSize: 28, lineHeight: 36, fontVariant: TABULAR },
+  numeralSmall: { fontFamily: fonts.bodyBold, fontSize: 18, lineHeight: 26, fontVariant: TABULAR },
 } as const
 
 /** A 4-point rhythm. Nothing in a layout is spaced by a value outside it. */

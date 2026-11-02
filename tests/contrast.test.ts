@@ -66,6 +66,17 @@ const PAIRS: readonly [fg: Role, bg: Role, min: number][] = [
   // A filled button has no border; its own fill is the boundary.
   ['primary', 'bg', NON_TEXT],
   ['primary', 'surface', NON_TEXT],
+
+  // Field errors sit on the page as well as on cards.
+  ['danger', 'bg', TEXT],
+  // Meter fills on their track.
+  ['primary', 'surfaceRaised', NON_TEXT],
+  ['warn', 'surfaceRaised', NON_TEXT],
+  // Progress: done segments against the remaining ones.
+  ['primary', 'line', NON_TEXT],
+  // Switch thumb against its track, off and on.
+  ['surface', 'lineStrong', NON_TEXT],
+  ['surface', 'primary', NON_TEXT],
 ]
 
 const HEX = /^#[0-9A-F]{6}$/i

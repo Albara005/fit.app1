@@ -1,16 +1,16 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { View } from 'react-native'
 import {
-  Body, Button, Card, Meter, Row, Screen, SectionTitle, Small, Spacer, Stat, Stepper, Title,
+  Body, Button, Caption, Card, CoachLine, Grow, Heading, Meter, Row, Screen, Section, Stat, Stepper, Title,
 } from '../components/ui'
 import {
   useAddWeight, useDerivedProfile, useGeneratePlan, useSaveProfile, useWeeklyReview,
 } from '../lib/data/queries'
 import { today } from '../lib/data/repo'
+import { space } from '../lib/design/tokens'
 import { ltr } from '../lib/i18n'
 import { useT } from '../lib/i18n/useT'
-import { colors, space, type } from '../lib/theme'
 
 /**
  * Loop two, in two minutes: one number in, then what happened, what changed,
@@ -29,7 +29,7 @@ export default function Review() {
 
   if (!profile) {
     return (
-      <Screen>
+      <Screen center>
         <Title>{t('today.noPlan')}</Title>
       </Screen>
     )
@@ -48,10 +48,9 @@ export default function Review() {
           />
         }
       >
-        <Body>{t('review.intro')}</Body>
-        <Spacer size={space.lg} />
-        <SectionTitle>{t('review.weightPrompt')}</SectionTitle>
-        <Stepper value={weight} onChange={setWeight} min={35} max={250} step={0.1} suffix={t('common.kg')} />
+        <Title>{t('review.weightPrompt')}</Title>
+        <Body muted>{t('review.intro')}</Body>
+        <Stepper label={t('review.weightPrompt')} value={weight} onChange={setWeight} min={35} max={250} step={0.1} unit={t('common.kg')} />
       </Screen>
     )
   }
@@ -68,10 +67,7 @@ export default function Review() {
           onPress={async () => {
             if (!data) return
             await saveProfile.mutateAsync(data.nextProfile)
-            await generate.mutateAsync({
-              profile: data.nextProfile,
-              weekIndex: data.nextPlan.weekIndex,
-            })
+            await generate.mutateAsync({ profile: data.nextProfile, weekIndex: data.nextPlan.weekIndex })
             router.replace('/(tabs)/plan')
           }}
         />
@@ -80,53 +76,56 @@ export default function Review() {
       {data ? (
         <>
           <Card>
-            <Row>
+            <Row style={{ alignItems: 'flex-start' }}>
               <Stat label={t('review.adherence')} value={`${Math.round(data.adherence * 100)}%`} />
-              <View style={s.grow} />
+              <Grow />
               {data.weeklyChangeKg !== null ? (
                 <Stat
-                  label={t('common.week')}
-                  value={ltr(
-                    `${data.weeklyChangeKg > 0 ? '+' : ''}${Math.round(data.weeklyChangeKg * 100) / 100}`,
-                  )}
+                  size="small"
+                  label={t('review.change')}
+                  // Isolated: a leading minus is directionally weak, and in Arabic
+                  // it would otherwise land after the number.
+                  value={ltr(`${data.weeklyChangeKg > 0 ? '+' : ''}${Math.round(data.weeklyChangeKg * 100) / 100}`)}
                   unit={t('common.kg')}
                 />
               ) : null}
             </Row>
-            <Spacer size={space.sm} />
-            <Meter value={data.adherence} max={1} />
+            <Meter value={data.adherence} max={1} label={t('review.adherence')} />
           </Card>
 
-          {data.cards.map((card) => (
-            <Card key={card.key}>
-              <Text style={s.cardTitle}>{card.title[locale]}</Text>
-              <Body muted={false}>{card.body[locale]}</Body>
+          {/* What happened, what changed, what is new — in that order, one each. */}
+          {data.cards.map((card) =>
+            card.key === 'changed' ? (
+              <CoachLine key={card.key} label={card.title[locale]}>
+                {card.body[locale]}
+              </CoachLine>
+            ) : (
+              <Card key={card.key}>
+                <Heading>{card.title[locale]}</Heading>
+                <Body>{card.body[locale]}</Body>
+              </Card>
+            ),
+          )}
+
+          <Section title={t('plan.week', { index: data.nextPlan.weekIndex + 1 })}>
+            <Card>
+              <Row style={{ gap: space.lg, alignItems: 'flex-start' }}>
+                <View style={{ flex: 1 }}>
+                  <Stat size="small" label={t('common.kcal')} value={data.nextPlan.nutrition.kcal} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Stat size="small" label={t('plan.protein')} value={data.nextPlan.nutrition.protein} unit={t('common.gram')} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Stat size="small" label={t('onboarding.daysUnit')} value={data.nextProfile.daysPerWeek} />
+                </View>
+              </Row>
             </Card>
-          ))}
-
-          <Card tone="accent">
-            <Small>{t('plan.week', { index: data.nextPlan.weekIndex + 1 })}</Small>
-            <Row>
-              <Stat label={t('common.kcal')} value={data.nextPlan.nutrition.kcal} />
-              <View style={s.grow} />
-              <Stat
-                  label={t('plan.protein')}
-                  value={data.nextPlan.nutrition.protein}
-                  unit={t('common.gram')}
-                />
-              <View style={s.grow} />
-              <Stat label={t('onboarding.daysUnit')} value={data.nextProfile.daysPerWeek} />
-            </Row>
-          </Card>
+          </Section>
         </>
       ) : (
-        <Body>{t('common.loading')}</Body>
+        <Caption>{t('common.loading')}</Caption>
       )}
     </Screen>
   )
 }
-
-const s = StyleSheet.create({
-  grow: { flex: 1 },
-  cardTitle: { ...type.heading, color: colors.lime },
-})
