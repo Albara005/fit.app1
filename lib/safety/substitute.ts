@@ -1,0 +1,70 @@
+import { availableTo } from '../plan/exercises'
+import type { Equipment, InjuryId, MovementPattern, PlannedExercise } from '../types'
+
+function overlap(a: readonly string[], b: readonly string[]): number {
+  let score = 0
+  for (const [i, m] of a.entries()) {
+    if (!b.includes(m)) continue
+    // The first listed muscle is the primary target; matching it counts double.
+    score += i === 0 ? 2 : 1
+  }
+  return score
+}
+
+/**
+ * Replaces every exercise on a blocked pattern with the closest allowed one:
+ * same primary muscle where possible, same equipment tier, never a pattern the
+ * profile's injuries exclude. Deterministic — the same input always yields the
+ * same session, so a user never sees their plan reshuffle for no reason.
+ */
+export function substitute(
+  exercises: readonly PlannedExercise[],
+  blocked: ReadonlyMap<MovementPattern, InjuryId>,
+  equipment: readonly Equipment[],
+): PlannedExercise[] {
+  const pool = availableTo(equipment)
+    .filter((x) => !blocked.has(x.pattern))
+    .sort((a, b) => a.id.localeCompare(b.id))
+
+  const used = new Set(exercises.filter((x) => !blocked.has(x.pattern)).map((x) => x.id))
+  const out: PlannedExercise[] = []
+
+  for (const ex of exercises) {
+    const injury = blocked.get(ex.pattern)
+    if (!injury) {
+      out.push(ex)
+      continue
+    }
+
+    let best: (typeof pool)[number] | undefined
+    let bestScore = -1
+    for (const candidate of pool) {
+      if (used.has(candidate.id)) continue
+      const score = overlap(ex.muscles, candidate.muscles)
+      if (score > bestScore) {
+        best = candidate
+        bestScore = score
+      }
+    }
+
+    // No same-muscle option survives the blocklist: drop the slot rather than
+    // hand back something that trains the wrong thing.
+    if (!best || bestScore <= 0) continue
+
+    used.add(best.id)
+    out.push({
+      id: best.id,
+      name: best.name,
+      pattern: best.pattern,
+      muscles: best.muscles,
+      equipment: best.equipment,
+      sets: ex.sets,
+      reps: ex.reps,
+      restSec: ex.restSec,
+      rpe: ex.rpe,
+      substitutedFor: { id: ex.id, injury, pattern: ex.pattern },
+    })
+  }
+
+  return out
+}
